@@ -15,6 +15,13 @@
       "when": 1789127769183,
       "tag": "0001_spotty_mariko_yashida",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789132913993,
+      "tag": "0002_soft_bishop",
+      "breakpoints": true
     }
   ]
 }

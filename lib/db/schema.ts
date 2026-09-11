@@ -158,6 +158,29 @@ export const subscriptions = pgTable(
   ]
 );
 
+// ── Site Settings ─────────────────────────────────────────────────────────────
+
+export const siteSettings = pgTable("site_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  appName: text("app_name").notNull().default("TESTAPI"),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ── Plans ────────────────────────────────────────────────────────────────────
+
+export const plans = pgTable("plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  price: text("price").notNull(),
+  features: jsonb("features").notNull().default([]),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // ── Relations ────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({

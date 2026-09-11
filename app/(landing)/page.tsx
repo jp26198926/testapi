@@ -1,12 +1,24 @@
 import Link from "next/link";
+import { db } from "@/lib/db";
+import { plans, siteSettings } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const settingsRows = await db.select().from(siteSettings).limit(1);
+  const settings = settingsRows[0] ?? { appName: "TESTAPI", logoUrl: null, faviconUrl: null };
+
+  const activePlans = await db
+    .select()
+    .from(plans)
+    .where(eq(plans.isActive, true))
+    .orderBy(asc(plans.sortOrder));
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="border-b border-zinc-200 dark:border-zinc-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-xl font-bold">TESTAPI</span>
+          <span className="text-xl font-bold">{settings.appName}</span>
           <div className="flex items-center gap-4">
             <Link
               href="/public-api"
@@ -91,48 +103,47 @@ export default function LandingPage() {
         </div>
 
         {/* Plans */}
-        <div className="mt-24 grid max-w-3xl gap-8 sm:grid-cols-2">
-          <div className="rounded-lg border border-zinc-200 p-8 text-left dark:border-zinc-800">
-            <h3 className="text-lg font-bold">Free</h3>
-            <p className="mt-2 text-3xl font-bold">$0/mo</p>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <li>Public API access</li>
-              <li>5 private collections</li>
-              <li>50 records per collection</li>
-              <li>CRUD API</li>
-              <li>API playground</li>
-              <li>API keys</li>
-            </ul>
-            <Link
-              href="/register"
-              className="mt-6 inline-block rounded-md border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-            >
-              Get started
-            </Link>
+        {activePlans.length > 0 && (
+          <div
+            className={`mt-24 grid max-w-3xl gap-8 ${
+              activePlans.length === 1 ? "sm:grid-cols-1" : "sm:grid-cols-2"
+            }`}
+          >
+            {activePlans.map((plan, i) => (
+              <div
+                key={plan.id}
+                className={`rounded-lg p-8 text-left ${
+                  i === activePlans.length - 1
+                    ? "border border-black dark:border-white"
+                    : "border border-zinc-200 dark:border-zinc-800"
+                }`}
+              >
+                <h3 className="text-lg font-bold">{plan.name}</h3>
+                <p className="mt-2 text-3xl font-bold">{plan.price}</p>
+                <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  {(plan.features as string[]).map((f, j) => (
+                    <li key={j}>{f}</li>
+                  ))}
+                </ul>
+                <Link
+                  href="/register"
+                  className={`mt-6 inline-block rounded-md px-4 py-2 text-sm ${
+                    i === activePlans.length - 1
+                      ? "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                      : "border border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                  }`}
+                >
+                  {i === activePlans.length - 1 ? "Upgrade" : "Get started"}
+                </Link>
+              </div>
+            ))}
           </div>
-          <div className="rounded-lg border border-black p-8 text-left dark:border-white">
-            <h3 className="text-lg font-bold">Pro</h3>
-            <p className="mt-2 text-3xl font-bold">$9/mo</p>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <li>Everything in Free</li>
-              <li>Unlimited collections</li>
-              <li>Unlimited records</li>
-              <li>Higher rate limits</li>
-              <li>Priority features</li>
-            </ul>
-            <Link
-              href="/register"
-              className="mt-6 inline-block rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Upgrade to Pro
-            </Link>
-          </div>
-        </div>
+        )}
       </main>
 
       {/* Footer */}
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        <p>&copy; {new Date().getFullYear()} TESTAPI. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} {settings.appName}. All rights reserved.</p>
       </footer>
     </div>
   );
