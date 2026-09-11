@@ -88,6 +88,7 @@ export const collections = pgTable(
   (table) => [
     index("collections_user_id_idx").on(table.userId),
     uniqueIndex("collections_user_slug_idx").on(table.userId, table.slug),
+    uniqueIndex("collections_user_name_idx").on(table.userId, table.name),
   ]
 );
 

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { collections } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "@/lib/api/auth";
 import {
   apiSuccess,
@@ -11,12 +11,11 @@ import {
   createCollectionSchema,
   paginationSchema,
 } from "@/lib/api/validation";
-import { canCreateCollection, getCollectionCount } from "@/lib/api/plans";
+import { canCreateCollection } from "@/lib/api/plans";
 import { toSlug } from "@/lib/utils";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import { headers } from "next/headers";
 
-// GET /api/collections — list user's collections
+// GET /api/collection — list user's collections
 export async function GET(request: Request) {
   let user;
   try {
@@ -56,7 +55,7 @@ export async function GET(request: Request) {
   });
 }
 
-// POST /api/collections — create a collection
+// POST /api/collection — create a collection
 export async function POST(request: Request) {
   let user;
   try {
@@ -82,28 +81,30 @@ export async function POST(request: Request) {
     return ERRORS.COLLECTION_LIMIT_REACHED();
   }
 
-  const slug = toSlug(parsed.data.name);
-
-  // Check slug uniqueness for this user
-  const existing = await db
+  // Check name uniqueness for this user
+  const existingName = await db
     .select()
     .from(collections)
-    .where(eq(collections.slug, slug))
+    .where(
+      and(
+        eq(collections.userId, user.id),
+        eq(collections.name, parsed.data.name)
+      )
+    )
     .limit(1);
 
-  // If slug exists globally, append a short suffix
-  let finalSlug = slug;
-  if (existing.length > 0) {
-    const suffix = crypto.randomUUID().slice(0, 6);
-    finalSlug = `${slug}-${suffix}`;
+  if (existingName.length > 0) {
+    return ERRORS.BAD_REQUEST("A collection with this name already exists.");
   }
+
+  const slug = toSlug(parsed.data.name);
 
   const [newCollection] = await db
     .insert(collections)
     .values({
       userId: user.id,
       name: parsed.data.name,
-      slug: finalSlug,
+      slug,
       description: parsed.data.description,
       isPublic: false,
     })

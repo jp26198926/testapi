@@ -22,7 +22,7 @@ export default function CollectionsPage() {
   const [creating, setCreating] = useState(false);
 
   async function fetchCollections() {
-    const res = await fetch("/api/collections");
+    const res = await fetch("/api/collection");
     if (res.ok) {
       const data = await res.json();
       setCollections(data.data);
@@ -39,7 +39,7 @@ export default function CollectionsPage() {
     setError("");
     setCreating(true);
 
-    const res = await fetch("/api/collections", {
+    const res = await fetch("/api/collection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description }),
@@ -60,7 +60,7 @@ export default function CollectionsPage() {
   async function handleDelete(id: string, collName: string) {
     if (!confirm(`Delete "${collName}" and all its records?`)) return;
 
-    const res = await fetch(`/api/collections/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/collection/${id}`, { method: "DELETE" });
     if (res.ok) {
       fetchCollections();
     }
@@ -146,7 +146,7 @@ export default function CollectionsPage() {
                   {col.description || "No description"}
                 </p>
                 <p className="mt-1 text-xs text-zinc-400">
-                  /api/collections/{col.id}/records
+                  /api/collection/{col.id}/{col.slug}
                 </p>
               </div>
               <button

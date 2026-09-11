@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "collections_user_name_idx" ON "collections" USING btree ("user_id","name");

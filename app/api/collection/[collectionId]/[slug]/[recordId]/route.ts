@@ -5,10 +5,11 @@ import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, ERRORS } from "@/lib/api/response";
 import { updateRecordSchema } from "@/lib/api/validation";
 
-// Helper to verify record ownership through collection
+// Helper to verify record ownership through collection, including slug check
 async function verifyRecordOwnership(
   userId: string,
   collectionId: string,
+  slug: string,
   recordId: string
 ) {
   const col = await db
@@ -22,7 +23,7 @@ async function verifyRecordOwnership(
     )
     .limit(1);
 
-  if (col.length === 0) return null;
+  if (col.length === 0 || col[0].slug !== slug) return null;
 
   const rec = await db
     .select()
@@ -38,12 +39,12 @@ async function verifyRecordOwnership(
   return rec.length > 0 ? rec[0] : null;
 }
 
-// GET /api/collections/[collectionId]/records/[recordId]
+// GET /api/collection/[collectionId]/[slug]/[recordId]
 export async function GET(
   request: Request,
   {
     params,
-  }: { params: Promise<{ collectionId: string; recordId: string }> }
+  }: { params: Promise<{ collectionId: string; slug: string; recordId: string }> }
 ) {
   let user;
   try {
@@ -52,10 +53,11 @@ export async function GET(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, recordId } = await params;
+  const { collectionId, slug, recordId } = await params;
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
+    slug,
     recordId
   );
 
@@ -69,12 +71,12 @@ export async function GET(
   });
 }
 
-// PATCH /api/collections/[collectionId]/records/[recordId] — partial update
+// PATCH /api/collection/[collectionId]/[slug]/[recordId] — partial update
 export async function PATCH(
   request: Request,
   {
     params,
-  }: { params: Promise<{ collectionId: string; recordId: string }> }
+  }: { params: Promise<{ collectionId: string; slug: string; recordId: string }> }
 ) {
   let user;
   try {
@@ -83,10 +85,11 @@ export async function PATCH(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, recordId } = await params;
+  const { collectionId, slug, recordId } = await params;
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
+    slug,
     recordId
   );
 
@@ -120,12 +123,12 @@ export async function PATCH(
   });
 }
 
-// PUT /api/collections/[collectionId]/records/[recordId] — full replace
+// PUT /api/collection/[collectionId]/[slug]/[recordId] — full replace
 export async function PUT(
   request: Request,
   {
     params,
-  }: { params: Promise<{ collectionId: string; recordId: string }> }
+  }: { params: Promise<{ collectionId: string; slug: string; recordId: string }> }
 ) {
   let user;
   try {
@@ -134,10 +137,11 @@ export async function PUT(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, recordId } = await params;
+  const { collectionId, slug, recordId } = await params;
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
+    slug,
     recordId
   );
 
@@ -165,12 +169,12 @@ export async function PUT(
   });
 }
 
-// DELETE /api/collections/[collectionId]/records/[recordId]
+// DELETE /api/collection/[collectionId]/[slug]/[recordId]
 export async function DELETE(
   request: Request,
   {
     params,
-  }: { params: Promise<{ collectionId: string; recordId: string }> }
+  }: { params: Promise<{ collectionId: string; slug: string; recordId: string }> }
 ) {
   let user;
   try {
@@ -179,10 +183,11 @@ export async function DELETE(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, recordId } = await params;
+  const { collectionId, slug, recordId } = await params;
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
+    slug,
     recordId
   );
 

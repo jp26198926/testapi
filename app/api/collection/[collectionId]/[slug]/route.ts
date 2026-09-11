@@ -14,10 +14,10 @@ import {
 import { canCreateRecord } from "@/lib/api/plans";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
-// GET /api/collections/[collectionId]/records — list records
+// GET /api/collection/[collectionId]/[slug] — list records
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ collectionId: string }> }
+  { params }: { params: Promise<{ collectionId: string; slug: string }> }
 ) {
   let user;
   try {
@@ -26,7 +26,7 @@ export async function GET(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId } = await params;
+  const { collectionId, slug } = await params;
   const url = new URL(request.url);
   const parsed = paginationSchema.safeParse({
     page: url.searchParams.get("page") ?? undefined,
@@ -36,7 +36,7 @@ export async function GET(
     ? parsed.data
     : { page: 1, limit: 20 };
 
-  // Verify ownership
+  // Verify ownership and slug
   const col = await db
     .select()
     .from(collections)
@@ -48,7 +48,7 @@ export async function GET(
     )
     .limit(1);
 
-  if (col.length === 0) {
+  if (col.length === 0 || col[0].slug !== slug) {
     return ERRORS.NOT_FOUND();
   }
 
@@ -77,10 +77,10 @@ export async function GET(
   );
 }
 
-// POST /api/collections/[collectionId]/records — create a record
+// POST /api/collection/[collectionId]/[slug] — create a record
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ collectionId: string }> }
+  { params }: { params: Promise<{ collectionId: string; slug: string }> }
 ) {
   let user;
   try {
@@ -89,13 +89,13 @@ export async function POST(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId } = await params;
+  const { collectionId, slug } = await params;
 
   // Rate limit
   const rl = checkRateLimit(user.id, "free");
   if (!rl.allowed) return ERRORS.RATE_LIMITED();
 
-  // Verify ownership
+  // Verify ownership and slug
   const col = await db
     .select()
     .from(collections)
@@ -107,7 +107,7 @@ export async function POST(
     )
     .limit(1);
 
-  if (col.length === 0) {
+  if (col.length === 0 || col[0].slug !== slug) {
     return ERRORS.NOT_FOUND();
   }
 

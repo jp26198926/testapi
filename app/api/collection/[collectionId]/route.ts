@@ -1,12 +1,12 @@
 import { db } from "@/lib/db";
 import { collections } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, ERRORS } from "@/lib/api/response";
 import { updateCollectionSchema } from "@/lib/api/validation";
 import { toSlug } from "@/lib/utils";
 
-// GET /api/collections/[collectionId] — get single collection
+// GET /api/collection/[collectionId] — get single collection
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ collectionId: string }> }
@@ -38,7 +38,7 @@ export async function GET(
   return apiSuccess(col[0]);
 }
 
-// PATCH /api/collections/[collectionId] — update collection
+// PATCH /api/collection/[collectionId] — update collection
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ collectionId: string }> }
@@ -75,6 +75,25 @@ export async function PATCH(
     return ERRORS.NOT_FOUND();
   }
 
+  // Check name uniqueness if name is being changed
+  if (parsed.data.name && parsed.data.name !== col[0].name) {
+    const existingName = await db
+      .select()
+      .from(collections)
+      .where(
+        and(
+          eq(collections.userId, user.id),
+          eq(collections.name, parsed.data.name),
+          ne(collections.id, collectionId)
+        )
+      )
+      .limit(1);
+
+    if (existingName.length > 0) {
+      return ERRORS.BAD_REQUEST("A collection with this name already exists.");
+    }
+  }
+
   const updates: Record<string, unknown> = {
     updatedAt: new Date(),
   };
@@ -95,7 +114,7 @@ export async function PATCH(
   return apiSuccess(updated);
 }
 
-// DELETE /api/collections/[collectionId] — delete collection and its records
+// DELETE /api/collection/[collectionId] — delete collection and its records
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ collectionId: string }> }

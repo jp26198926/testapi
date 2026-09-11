@@ -27,7 +27,9 @@ export default function PublicApiPage() {
   const [loading, setLoading] = useState(true);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,15 +46,16 @@ export default function PublicApiPage() {
   useEffect(() => {
     if (!selected) return;
     setRecordsLoading(true);
-    fetch(`/api/public/${selected}?page=${page}&limit=10`)
+    fetch(`/api/public/${selected}?page=${page}&limit=${limit}`)
       .then((r) => r.json())
       .then((d) => {
         setRecords(d.data || []);
         setTotalPages(d.pagination?.totalPages || 1);
+        setTotal(d.pagination?.total || 0);
         setRecordsLoading(false);
       })
       .catch(() => setRecordsLoading(false));
-  }, [selected, page]);
+  }, [selected, page, limit]);
 
   function copyText(text: string, id: string) {
     navigator.clipboard.writeText(text);
@@ -253,25 +256,50 @@ export default function PublicApiPage() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mb-8 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-md border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-md border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
-            >
-              Next
-            </button>
+        {total > 0 && (
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-800">
+            <p className="text-sm text-zinc-500">
+              Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)}{" "}
+              of {total} records
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-zinc-500">
+                Per page:
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="ml-1 rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                >
+                  {[10, 20, 50, 100].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  Prev
+                </button>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

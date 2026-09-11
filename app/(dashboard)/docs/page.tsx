@@ -27,37 +27,47 @@ GET ${API_BASE}/api/public/posts/1`,
   },
   {
     title: "Private Collections",
-    content: `Requires authentication. Users can only access their own collections.
+    content: `Requires authentication. Users can only access their own collections. Collection names must be unique per user.
 
 List your collections:
-GET ${API_BASE}/api/collections
+GET ${API_BASE}/api/collection
 
 Create a collection:
-POST ${API_BASE}/api/collections
+POST ${API_BASE}/api/collection
 Content-Type: application/json
 Authorization: Bearer YOUR_API_KEY
 
-{ "name": "My Collection", "description": "Optional description" }`,
+{ "name": "My Collection", "description": "Optional description" }
+
+Get a collection:
+GET ${API_BASE}/api/collection/:id
+
+Update a collection:
+PATCH ${API_BASE}/api/collection/:id
+{ "name": "New Name", "description": "Updated description" }
+
+Delete a collection:
+DELETE ${API_BASE}/api/collection/:id`,
   },
   {
     title: "Records",
     content: `List records:
-GET ${API_BASE}/api/collections/:id/records?page=1&limit=20
+GET ${API_BASE}/api/collection/:id/:slug?page=1&limit=20
 
 Create a record:
-POST ${API_BASE}/api/collections/:id/records
+POST ${API_BASE}/api/collection/:id/:slug
 { "data": { "name": "John", "age": 30 } }
 
 Update a record (partial):
-PATCH ${API_BASE}/api/collections/:id/records/:recordId
+PATCH ${API_BASE}/api/collection/:id/:slug/:recordId
 { "data": { "age": 31 } }
 
 Replace a record:
-PUT ${API_BASE}/api/collections/:id/records/:recordId
+PUT ${API_BASE}/api/collection/:id/:slug/:recordId
 { "data": { "name": "Jane", "role": "admin" } }
 
 Delete a record:
-DELETE ${API_BASE}/api/collections/:id/records/:recordId`,
+DELETE ${API_BASE}/api/collection/:id/:slug/:recordId`,
   },
   {
     title: "API Keys",
