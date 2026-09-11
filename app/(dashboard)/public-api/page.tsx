@@ -94,145 +94,135 @@ export default function PublicApiPage() {
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-        {/* Collections sidebar */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Collections
-          </h2>
-          {loading ? (
-            <p className="text-sm text-zinc-500">Loading...</p>
-          ) : (
-            <div className="space-y-1">
-              {collections.map((col) => (
-                <button
-                  key={col.slug}
-                  onClick={() => {
-                    setSelected(col.slug);
-                    setPage(1);
-                  }}
-                  className={`w-full rounded-md px-3 py-2 text-left text-sm ${
-                    selected === col.slug
-                      ? "bg-zinc-200 font-medium dark:bg-zinc-800"
-                      : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
-                  }`}
-                >
-                  <span className="font-medium">{col.name}</span>
-                  <span className="ml-2 text-xs text-zinc-400">
-                    /api/public/{col.slug}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Records viewer */}
-        <div>
-          {selected && (
-            <>
-              {/* Endpoint info */}
-              <div className="mb-6 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="mr-2 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
-                      GET
-                    </span>
-                    <code className="text-sm">/api/public/{selected}</code>
-                  </div>
-                  <button
-                    onClick={() =>
-                      copyText(
-                        `curl ${baseUrl}/api/public/${selected}`,
-                        "endpoint"
-                      )
-                    }
-                    className="rounded px-3 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
-                  >
-                    {copied === "endpoint" ? "Copied!" : "Copy cURL"}
-                  </button>
-                </div>
-                <div className="mt-3 flex gap-4 text-xs text-zinc-500">
-                  <span>
-                    Pagination:{" "}
-                    <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-900">
-                      ?page=1&limit=20
-                    </code>
-                  </span>
-                  <span>Max limit: 100</span>
-                </div>
-              </div>
-
-              {/* Records */}
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-                Response Preview
-              </h2>
-              {recordsLoading ? (
-                <p className="text-sm text-zinc-500">Loading records...</p>
-              ) : records.length === 0 ? (
-                <p className="text-sm text-zinc-500">No records found.</p>
-              ) : (
-                <div className="space-y-3">
-                  {records.map((rec) => {
-                    const { id, createdAt, updatedAt, ...fields } = rec;
-                    return (
-                      <div
-                        key={id}
-                        className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-                      >
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="font-mono text-xs text-zinc-400">
-                            ID: {id}
-                          </span>
-                          <button
-                            onClick={() =>
-                              copyText(
-                                `curl ${baseUrl}/api/public/${selected}/${id}`,
-                                id
-                              )
-                            }
-                            className="text-xs text-zinc-500 hover:underline"
-                          >
-                            {copied === id ? "Copied!" : "Copy URL"}
-                          </button>
-                        </div>
-                        <pre className="overflow-x-auto rounded bg-zinc-50 p-3 text-sm dark:bg-zinc-950">
-                          {JSON.stringify(fields, null, 2)}
-                        </pre>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="rounded-md border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Page {page} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={page === totalPages}
-                    className="rounded-md border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      {/* Collection Selector */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+          Collections
+        </h2>
+        {loading ? (
+          <p className="text-sm text-zinc-500">Loading...</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {collections.map((col) => (
+              <button
+                key={col.slug}
+                onClick={() => {
+                  setSelected(col.slug);
+                  setPage(1);
+                }}
+                className={`rounded-md px-4 py-2 text-sm ${
+                  selected === col.slug
+                    ? "bg-zinc-200 font-medium dark:bg-zinc-800"
+                    : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                }`}
+              >
+                {col.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Endpoint info */}
+      {selected && (
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="mr-2 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
+                GET
+              </span>
+              <code className="text-sm">/api/public/{selected}</code>
+            </div>
+            <button
+              onClick={() =>
+                copyText(
+                  `curl ${baseUrl}/api/public/${selected}`,
+                  "endpoint"
+                )
+              }
+              className="rounded px-3 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+            >
+              {copied === "endpoint" ? "Copied!" : "Copy cURL"}
+            </button>
+          </div>
+          <div className="mt-3 flex gap-4 text-xs text-zinc-500">
+            <span>
+              Pagination:{" "}
+              <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-900">
+                ?page=1&limit=20
+              </code>
+            </span>
+            <span>Max limit: 100</span>
+          </div>
+        </div>
+      )}
+
+      {/* Records */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+          Response Preview
+        </h2>
+        {recordsLoading ? (
+          <p className="text-sm text-zinc-500">Loading records...</p>
+        ) : records.length === 0 ? (
+          <p className="text-sm text-zinc-500">No records found.</p>
+        ) : (
+          <div className="space-y-3">
+            {records.map((rec) => {
+              const { id, createdAt, updatedAt, ...fields } = rec;
+              return (
+                <div
+                  key={id}
+                  className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-mono text-xs text-zinc-400">
+                      ID: {id}
+                    </span>
+                    <button
+                      onClick={() =>
+                        copyText(
+                          `curl ${baseUrl}/api/public/${selected}/${id}`,
+                          id
+                        )
+                      }
+                      className="text-xs text-zinc-500 hover:underline"
+                    >
+                      {copied === id ? "Copied!" : "Copy URL"}
+                    </button>
+                  </div>
+                  <pre className="overflow-x-auto rounded bg-zinc-50 p-3 text-sm dark:bg-zinc-950">
+                    {JSON.stringify(fields, null, 2)}
+                  </pre>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="rounded-md border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="rounded-md border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
