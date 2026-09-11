@@ -9,6 +9,12 @@ export default function LandingPage() {
           <span className="text-xl font-bold">TESTAPI</span>
           <div className="flex items-center gap-4">
             <Link
+              href="/public-api"
+              className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+            >
+              Public API
+            </Link>
+            <Link
               href="/docs"
               className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
             >
@@ -56,13 +62,18 @@ export default function LandingPage() {
 
         {/* Features */}
         <div className="mt-24 grid max-w-4xl gap-8 sm:grid-cols-3">
-          <div className="text-left">
-            <h3 className="font-semibold">Public API</h3>
+          <Link href="/public-api" className="group text-left">
+            <h3 className="font-semibold group-hover:underline">
+              Public API
+            </h3>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Access predefined collections without authentication. Great for
               testing and learning.
             </p>
-          </div>
+            <span className="mt-2 inline-block text-sm text-black underline dark:text-white">
+              Explore collections &rarr;
+            </span>
+          </Link>
           <div className="text-left">
             <h3 className="font-semibold">Private Collections</h3>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
