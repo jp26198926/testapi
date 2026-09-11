@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { href: "/collections", label: "Collections" },
   { href: "/keys", label: "API Keys" },
   { href: "/playground", label: "Playground" },
-  { href: "/public-api", label: "Public API" },
+  { href: "/my/public-api", label: "Public API" },
   { href: "/docs", label: "Documentation" },
   { href: "/billing", label: "Billing" },
   { href: "/settings", label: "Settings" },
