@@ -22,6 +22,13 @@
       "when": 1789132913993,
       "tag": "0002_soft_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789173255389,
+      "tag": "0003_productive_blink",
+      "breakpoints": true
     }
   ]
 }

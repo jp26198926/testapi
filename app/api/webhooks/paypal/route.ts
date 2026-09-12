@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { subscriptions, users } from "@/lib/db/schema";
+import { subscriptions, payments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 // POST /api/webhooks/paypal — PayPal webhook handler
@@ -95,23 +95,60 @@ export async function POST(request: Request) {
 
     case "PAYMENT.SALE.COMPLETED": {
       // Payment succeeded — ensure subscription stays active
-      if (existingSub.length > 0 && existingSub[0].status !== "active") {
-        await db
-          .update(subscriptions)
-          .set({ status: "active", updatedAt: new Date() })
-          .where(eq(subscriptions.providerSubscriptionId, subscriptionId));
+      if (existingSub.length > 0) {
+        if (existingSub[0].status !== "active") {
+          await db
+            .update(subscriptions)
+            .set({ status: "active", updatedAt: new Date() })
+            .where(eq(subscriptions.providerSubscriptionId, subscriptionId));
+        }
+        await db.insert(payments).values({
+          userId: existingSub[0].userId,
+          subscriptionId: existingSub[0].id,
+          providerPaymentId: resource.id || null,
+          amount: resource.amount?.total || "0",
+          currency: resource.amount?.currency || "USD",
+          status: "completed",
+          description: "Subscription payment",
+        });
       }
       break;
     }
 
-    case "PAYMENT.SALE.DENIED":
-    case "PAYMENT.SALE.REFUNDED": {
-      // Payment failed — log but don't auto-downgrade immediately
+    case "PAYMENT.SALE.DENIED": {
       if (existingSub.length > 0) {
         await db
           .update(subscriptions)
           .set({ updatedAt: new Date() })
           .where(eq(subscriptions.providerSubscriptionId, subscriptionId));
+        await db.insert(payments).values({
+          userId: existingSub[0].userId,
+          subscriptionId: existingSub[0].id,
+          providerPaymentId: resource.id || null,
+          amount: resource.amount?.total || "0",
+          currency: resource.amount?.currency || "USD",
+          status: "denied",
+          description: "Payment denied",
+        });
+      }
+      break;
+    }
+
+    case "PAYMENT.SALE.REFUNDED": {
+      if (existingSub.length > 0) {
+        await db
+          .update(subscriptions)
+          .set({ updatedAt: new Date() })
+          .where(eq(subscriptions.providerSubscriptionId, subscriptionId));
+        await db.insert(payments).values({
+          userId: existingSub[0].userId,
+          subscriptionId: existingSub[0].id,
+          providerPaymentId: resource.id || null,
+          amount: resource.amount?.total || "0",
+          currency: resource.amount?.currency || "USD",
+          status: "refunded",
+          description: "Payment refunded",
+        });
       }
       break;
     }

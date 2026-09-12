@@ -158,6 +158,32 @@ export const subscriptions = pgTable(
   ]
 );
 
+// ── Payments ─────────────────────────────────────────────────────────────────
+
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    subscriptionId: uuid("subscription_id").references(
+      () => subscriptions.id,
+      { onDelete: "set null" }
+    ),
+    providerPaymentId: text("provider_payment_id"),
+    amount: text("amount").notNull(),
+    currency: text("currency").notNull().default("USD"),
+    status: text("status").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("payments_user_id_idx").on(table.userId),
+    index("payments_subscription_id_idx").on(table.subscriptionId),
+  ]
+);
+
 // ── Site Settings ─────────────────────────────────────────────────────────────
 
 export const siteSettings = pgTable("site_settings", {
@@ -187,6 +213,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   collections: many(collections),
   apiKeys: many(apiKeys),
   subscription: many(subscriptions),
+  payments: many(payments),
 }));
 
 export const collectionsRelations = relations(collections, ({ one, many }) => ({
@@ -207,4 +234,12 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
 
 export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   user: one(users, { fields: [subscriptions.userId], references: [users.id] }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  user: one(users, { fields: [payments.userId], references: [users.id] }),
+  subscription: one(subscriptions, {
+    fields: [payments.subscriptionId],
+    references: [subscriptions.id],
+  }),
 }));

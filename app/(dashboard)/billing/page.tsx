@@ -1,6 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/data-table";
+import {
+  exportToCSV,
+  exportToExcel,
+  type ExportColumn,
+} from "@/lib/export";
+
+type Plan = {
+  id: string;
+  name: string;
+  price: string;
+  features: string[];
+  isActive: boolean;
+  sortOrder: number;
+};
 
 type SubscriptionData = {
   plan: string;
@@ -13,10 +31,131 @@ type SubscriptionData = {
   } | null;
 };
 
+type SubscriptionRecord = {
+  id: string;
+  plan: string;
+  status: string;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  createdAt: string;
+};
+
+type PaymentRecord = {
+  id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  description: string | null;
+  providerPaymentId: string | null;
+  createdAt: string;
+};
+
+const subscriptionColumns: DataTableColumn<SubscriptionRecord>[] = [
+  {
+    key: "createdAt",
+    label: "Date",
+    render: (val) => new Date(val as string).toLocaleDateString(),
+  },
+  { key: "plan", label: "Plan", render: (val) => <span className="capitalize">{String(val)}</span> },
+  {
+    key: "status",
+    label: "Status",
+    render: (val) => {
+      const status = String(val);
+      const colors: Record<string, string> = {
+        active: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+        pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
+        cancelled: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+        suspended: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+        expired: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
+      };
+      return (
+        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${colors[status] || ""}`}>
+          {status}
+        </span>
+      );
+    },
+  },
+  {
+    key: "currentPeriodEnd",
+    label: "Period End",
+    render: (val) => (val ? new Date(val as string).toLocaleDateString() : "-"),
+  },
+];
+
+const subscriptionExportColumns: ExportColumn[] = [
+  { key: "createdAt", label: "Date" },
+  { key: "plan", label: "Plan" },
+  { key: "status", label: "Status" },
+  { key: "currentPeriodStart", label: "Period Start" },
+  { key: "currentPeriodEnd", label: "Period End" },
+];
+
+const paymentColumns: DataTableColumn<PaymentRecord>[] = [
+  {
+    key: "createdAt",
+    label: "Date",
+    render: (val) => new Date(val as string).toLocaleDateString(),
+  },
+  {
+    key: "amount",
+    label: "Amount",
+    render: (val, row) => `${row.currency} ${val}`,
+  },
+  {
+    key: "status",
+    label: "Status",
+    render: (val) => {
+      const status = String(val);
+      const colors: Record<string, string> = {
+        completed: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+        pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
+        denied: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
+        refunded: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+      };
+      return (
+        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${colors[status] || ""}`}>
+          {status}
+        </span>
+      );
+    },
+  },
+  { key: "description", label: "Description" },
+];
+
+const paymentExportColumns: ExportColumn[] = [
+  { key: "createdAt", label: "Date" },
+  { key: "amount", label: "Amount" },
+  { key: "currency", label: "Currency" },
+  { key: "status", label: "Status" },
+  { key: "description", label: "Description" },
+  { key: "providerPaymentId", label: "Payment ID" },
+];
+
 export default function BillingPage() {
+  // Subscription state
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+
+  // Plans state
+  const [plans, setPlans] = useState<Plan[]>([]);
+
+  // Billing records state
+  const [billingRecords, setBillingRecords] = useState<SubscriptionRecord[]>([]);
+  const [billingPage, setBillingPage] = useState(1);
+  const [billingLimit, setBillingLimit] = useState(10);
+  const [billingTotal, setBillingTotal] = useState(0);
+  const [billingTotalPages, setBillingTotalPages] = useState(0);
+  const [billingLoading, setBillingLoading] = useState(true);
+
+  // Payment records state
+  const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentLimit, setPaymentLimit] = useState(10);
+  const [paymentTotal, setPaymentTotal] = useState(0);
+  const [paymentTotalPages, setPaymentTotalPages] = useState(0);
+  const [paymentLoading, setPaymentLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/subscriptions")
@@ -26,7 +165,50 @@ export default function BillingPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    fetch("/api/plans")
+      .then((r) => r.json())
+      .then((d) => setPlans(d.data || []))
+      .catch(() => {});
   }, []);
+
+  const fetchBillingRecords = useCallback(() => {
+    setBillingLoading(true);
+    fetch(`/api/subscriptions/history?page=${billingPage}&limit=${billingLimit}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setBillingRecords(d.data || []);
+        if (d.pagination) {
+          setBillingTotal(d.pagination.total);
+          setBillingTotalPages(d.pagination.totalPages);
+        }
+        setBillingLoading(false);
+      })
+      .catch(() => setBillingLoading(false));
+  }, [billingPage, billingLimit]);
+
+  const fetchPaymentRecords = useCallback(() => {
+    setPaymentLoading(true);
+    fetch(`/api/payments?page=${paymentPage}&limit=${paymentLimit}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setPaymentRecords(d.data || []);
+        if (d.pagination) {
+          setPaymentTotal(d.pagination.total);
+          setPaymentTotalPages(d.pagination.totalPages);
+        }
+        setPaymentLoading(false);
+      })
+      .catch(() => setPaymentLoading(false));
+  }, [paymentPage, paymentLimit]);
+
+  useEffect(() => {
+    fetchBillingRecords();
+  }, [fetchBillingRecords]);
+
+  useEffect(() => {
+    fetchPaymentRecords();
+  }, [fetchPaymentRecords]);
 
   async function handleUpgrade() {
     setUpgrading(true);
@@ -40,6 +222,28 @@ export default function BillingPage() {
       // noop
     }
     setUpgrading(false);
+  }
+
+  async function handleExportBilling(format: "csv" | "excel") {
+    const res = await fetch(`/api/subscriptions/history?page=1&limit=10000`);
+    const d = await res.json();
+    const rows = d.data || [];
+    if (format === "csv") {
+      exportToCSV(subscriptionExportColumns, rows, "billing-records.csv");
+    } else {
+      exportToExcel(subscriptionExportColumns, rows, "billing-records.xlsx");
+    }
+  }
+
+  async function handleExportPayments(format: "csv" | "excel") {
+    const res = await fetch(`/api/payments?page=1&limit=10000`);
+    const d = await res.json();
+    const rows = d.data || [];
+    if (format === "csv") {
+      exportToCSV(paymentExportColumns, rows, "payment-records.csv");
+    } else {
+      exportToExcel(paymentExportColumns, rows, "payment-records.xlsx");
+    }
   }
 
   if (loading) return <p className="text-zinc-500">Loading...</p>;
@@ -69,7 +273,7 @@ export default function BillingPage() {
           )}
         </div>
 
-        {/* Plan Details */}
+        {/* Plan Limits */}
         <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="text-lg font-semibold">Plan Limits</h2>
           {plan === "free" ? (
@@ -88,48 +292,91 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Pricing */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
-          <h3 className="text-lg font-bold">Free</h3>
-          <p className="mt-1 text-2xl font-bold">$0/mo</p>
-          <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <li>Public API access</li>
-            <li>5 private collections</li>
-            <li>50 records per collection</li>
-            <li>CRUD API + playground</li>
-            <li>API keys</li>
-          </ul>
-          {plan === "free" && (
-            <div className="mt-4 rounded bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">
-              Current plan
-            </div>
-          )}
+      {/* Plans (dynamic from DB, only active) */}
+      {plans.length > 0 && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {plans.map((p) => {
+            const isCurrent =
+              p.name.toLowerCase() === plan.toLowerCase();
+            return (
+              <div
+                key={p.id}
+                className={`rounded-lg border p-6 ${
+                  isCurrent
+                    ? "border-black dark:border-white"
+                    : "border-zinc-200 dark:border-zinc-800"
+                }`}
+              >
+                <h3 className="text-lg font-bold">{p.name}</h3>
+                <p className="mt-1 text-2xl font-bold">{p.price}</p>
+                {Array.isArray(p.features) && p.features.length > 0 && (
+                  <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                    {p.features.map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                )}
+                {isCurrent ? (
+                  <div className="mt-4 rounded bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">
+                    Current plan
+                  </div>
+                ) : p.name.toLowerCase() === "pro" && plan === "free" ? (
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="mt-4 w-full rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black"
+                  >
+                    {upgrading
+                      ? "Redirecting to PayPal..."
+                      : "Upgrade to Pro"}
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
-        <div className="rounded-lg border border-black p-6 dark:border-white">
-          <h3 className="text-lg font-bold">Pro</h3>
-          <p className="mt-1 text-2xl font-bold">$9/mo</p>
-          <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <li>Everything in Free</li>
-            <li>Unlimited collections</li>
-            <li>Unlimited records</li>
-            <li>Higher rate limits</li>
-            <li>Priority features</li>
-          </ul>
-          {plan === "pro" ? (
-            <div className="mt-4 rounded bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">
-              Current plan
-            </div>
-          ) : (
-            <button
-              onClick={handleUpgrade}
-              disabled={upgrading}
-              className="mt-4 w-full rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black"
-            >
-              {upgrading ? "Redirecting to PayPal..." : "Upgrade to Pro"}
-            </button>
-          )}
-        </div>
+      )}
+
+      {/* Billing Records */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold">Billing Records</h2>
+        <DataTable
+          columns={subscriptionColumns}
+          data={billingRecords}
+          page={billingPage}
+          limit={billingLimit}
+          total={billingTotal}
+          totalPages={billingTotalPages}
+          onPageChange={setBillingPage}
+          onLimitChange={(l) => {
+            setBillingLimit(l);
+            setBillingPage(1);
+          }}
+          onExportCSV={() => handleExportBilling("csv")}
+          onExportExcel={() => handleExportBilling("excel")}
+          loading={billingLoading}
+        />
+      </div>
+
+      {/* Payment Records */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold">Payment Records</h2>
+        <DataTable
+          columns={paymentColumns}
+          data={paymentRecords}
+          page={paymentPage}
+          limit={paymentLimit}
+          total={paymentTotal}
+          totalPages={paymentTotalPages}
+          onPageChange={setPaymentPage}
+          onLimitChange={(l) => {
+            setPaymentLimit(l);
+            setPaymentPage(1);
+          }}
+          onExportCSV={() => handleExportPayments("csv")}
+          onExportExcel={() => handleExportPayments("excel")}
+          loading={paymentLoading}
+        />
       </div>
     </div>
   );
