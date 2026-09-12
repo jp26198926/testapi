@@ -137,6 +137,7 @@ export default function BillingPage() {
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+  const [admin, setAdmin] = useState(false);
 
   // Plans state
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -165,6 +166,11 @@ export default function BillingPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    fetch("/api/admin/check")
+      .then((r) => r.json())
+      .then((d) => setAdmin(d.data?.isAdmin ?? false))
+      .catch(() => {});
 
     fetch("/api/plans")
       .then((r) => r.json())
@@ -248,7 +254,7 @@ export default function BillingPage() {
 
   if (loading) return <p className="text-zinc-500">Loading...</p>;
 
-  const plan = data?.plan || "free";
+  const plan = admin ? "admin" : data?.plan || "free";
   const sub = data?.subscription;
 
   return (
@@ -276,7 +282,13 @@ export default function BillingPage() {
         {/* Plan Limits */}
         <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="text-lg font-semibold">Plan Limits</h2>
-          {plan === "free" ? (
+          {admin ? (
+            <ul className="mt-4 space-y-2 text-sm">
+              <li>Collections: Unlimited</li>
+              <li>Records: Unlimited</li>
+              <li>Rate limit: Unlimited</li>
+            </ul>
+          ) : plan === "free" ? (
             <ul className="mt-4 space-y-2 text-sm">
               <li>Collections: 5 maximum</li>
               <li>Records: 50 per collection</li>
@@ -292,8 +304,8 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Plans (dynamic from DB, only active) */}
-      {plans.length > 0 && (
+      {/* Plans (dynamic from DB, only active) — hidden for admin */}
+      {!admin && plans.length > 0 && (
         <div className="grid gap-6 lg:grid-cols-2">
           {plans.map((p) => {
             const isCurrent =
