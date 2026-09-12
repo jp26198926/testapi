@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/validation";
 import { canCreateRecord } from "@/lib/api/plans";
 import { checkRateLimit } from "@/lib/api/rate-limit";
+import { isAdmin } from "@/lib/api/admin";
 
 // GET /api/collection/[collectionId]/[slug] — list records
 export async function GET(
@@ -92,7 +93,7 @@ export async function POST(
   const { collectionId, slug } = await params;
 
   // Rate limit
-  const rl = checkRateLimit(user.id, "free");
+  const rl = checkRateLimit(user.id, isAdmin(user) ? "admin" : "free");
   if (!rl.allowed) return ERRORS.RATE_LIMITED();
 
   // Verify ownership and slug
@@ -112,7 +113,7 @@ export async function POST(
   }
 
   // Check plan limits
-  const canCreate = await canCreateRecord(user.id, collectionId);
+  const canCreate = await canCreateRecord(user.id, collectionId, user);
   if (!canCreate) {
     return ERRORS.RECORD_LIMIT_REACHED();
   }

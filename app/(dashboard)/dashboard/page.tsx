@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { collections, subscriptions } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
 import { getUserPlan } from "@/lib/api/plans";
+import { isAdmin } from "@/lib/api/admin";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -12,7 +13,8 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   const userId = session.user.id;
-  const plan = await getUserPlan(userId);
+  const admin = isAdmin(session.user);
+  const plan = admin ? "admin" : await getUserPlan(userId);
 
   const collCount = await db
     .select({ count: count() })
@@ -43,7 +45,7 @@ export default async function DashboardPage() {
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
           <p className="text-sm text-zinc-500">Collections</p>
           <p className="mt-1 text-2xl font-bold">
-            {totalCollections} {plan === "free" ? "/ 5" : ""}
+            {totalCollections} {admin ? "" : plan === "free" ? "/ 5" : ""}
           </p>
         </div>
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">

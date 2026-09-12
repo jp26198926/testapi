@@ -14,6 +14,7 @@ import {
 import { canCreateCollection } from "@/lib/api/plans";
 import { toSlug } from "@/lib/utils";
 import { checkRateLimit } from "@/lib/api/rate-limit";
+import { isAdmin } from "@/lib/api/admin";
 
 // GET /api/collection — list user's collections
 export async function GET(request: Request) {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
   }
 
   // Rate limit
-  const rl = checkRateLimit(user.id, "free");
+  const rl = checkRateLimit(user.id, isAdmin(user) ? "admin" : "free");
   if (!rl.allowed) return ERRORS.RATE_LIMITED();
 
   const body = await request.json();
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const canCreate = await canCreateCollection(user.id);
+  const canCreate = await canCreateCollection(user.id, user);
   if (!canCreate) {
     return ERRORS.COLLECTION_LIMIT_REACHED();
   }

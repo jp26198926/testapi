@@ -4,6 +4,7 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   anonymous: { max: 60, windowMs: 60_000 },
   free: { max: 120, windowMs: 60_000 },
   pro: { max: 600, windowMs: 60_000 },
+  admin: { max: 100_000, windowMs: 60_000 },
   auth: { max: 10, windowMs: 60_000 },
 };
 

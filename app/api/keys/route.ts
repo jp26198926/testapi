@@ -6,6 +6,7 @@ import { apiSuccess, ERRORS } from "@/lib/api/response";
 import { createApiKeySchema } from "@/lib/api/validation";
 import { generateApiKey, encryptApiKey } from "@/lib/api/api-keys";
 import { checkRateLimit } from "@/lib/api/rate-limit";
+import { isAdmin } from "@/lib/api/admin";
 
 // GET /api/keys — list user's API keys (no secrets)
 export async function GET() {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     return ERRORS.UNAUTHORIZED();
   }
 
-  const rl = checkRateLimit(user.id, "free");
+  const rl = checkRateLimit(user.id, isAdmin(user) ? "admin" : "free");
   if (!rl.allowed) return ERRORS.RATE_LIMITED();
 
   const body = await request.json();

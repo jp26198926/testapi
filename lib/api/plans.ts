@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { apiKeys, subscriptions, collections } from "@/lib/db/schema";
 import { eq, and, isNull, count } from "drizzle-orm";
 import { hashApiKey } from "./api-keys";
+import { isAdmin } from "./admin";
+import type { User } from "better-auth";
 
 export async function getUserPlan(
   userId: string
@@ -39,8 +41,10 @@ export async function getCollectionCount(userId: string): Promise<number> {
 }
 
 export async function canCreateCollection(
-  userId: string
+  userId: string,
+  user?: User
 ): Promise<boolean> {
+  if (user && isAdmin(user)) return true;
   const plan = await getUserPlan(userId);
   if (plan === "pro") return true;
   const currentCount = await getCollectionCount(userId);
@@ -58,8 +62,10 @@ export async function getRecordCount(collectionId: string): Promise<number> {
 
 export async function canCreateRecord(
   userId: string,
-  collectionId: string
+  collectionId: string,
+  user?: User
 ): Promise<boolean> {
+  if (user && isAdmin(user)) return true;
   const plan = await getUserPlan(userId);
   if (plan === "pro") return true;
   const currentCount = await getRecordCount(collectionId);
