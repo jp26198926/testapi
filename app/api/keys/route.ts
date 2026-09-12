@@ -4,7 +4,7 @@ import { eq, isNull } from "drizzle-orm";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, ERRORS } from "@/lib/api/response";
 import { createApiKeySchema } from "@/lib/api/validation";
-import { generateApiKey } from "@/lib/api/api-keys";
+import { generateApiKey, encryptApiKey } from "@/lib/api/api-keys";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
 // GET /api/keys — list user's API keys (no secrets)
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
   }
 
   const { raw, hash, prefix } = generateApiKey();
+  const encrypted = encryptApiKey(raw);
 
   const expiresAt = parsed.data.expiresInDays
     ? new Date(Date.now() + parsed.data.expiresInDays * 86400000)
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
       name: parsed.data.name,
       keyHash: hash,
       keyPrefix: prefix,
+      encryptedKey: encrypted,
       expiresAt,
     })
     .returning();

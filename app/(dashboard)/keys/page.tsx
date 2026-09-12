@@ -20,6 +20,7 @@ export default function ApiKeysPage() {
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function fetchKeys() {
     const res = await fetch("/api/keys");
@@ -63,6 +64,15 @@ export default function ApiKeysPage() {
 
     const res = await fetch(`/api/keys/${id}`, { method: "DELETE" });
     if (res.ok) fetchKeys();
+  }
+
+  async function handleCopy(id: string) {
+    const res = await fetch(`/api/keys/${id}/reveal`);
+    if (!res.ok) return;
+    const data = await res.json();
+    await navigator.clipboard.writeText(data.data.key);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   }
 
   return (
@@ -163,12 +173,20 @@ export default function ApiKeysPage() {
                       Revoked
                     </span>
                   ) : (
-                    <button
-                      onClick={() => handleRevoke(key.id)}
-                      className="rounded px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                    >
-                      Revoke
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleCopy(key.id)}
+                        className="rounded px-3 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                      >
+                        {copiedId === key.id ? "Copied!" : "Copy"}
+                      </button>
+                      <button
+                        onClick={() => handleRevoke(key.id)}
+                        className="rounded px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        Revoke
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
