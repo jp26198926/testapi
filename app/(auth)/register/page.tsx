@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signUp } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +11,15 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [appName, setAppName] = useState("TESTAPI");
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => { if (d.data?.appName) setAppName(d.data.appName); })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +47,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold">Create an account</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Get started with TESTAPI
+            Get started with {appName}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">

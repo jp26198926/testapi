@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { requestPasswordReset } from "@/lib/auth-client";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const [appName, setAppName] = useState("TESTAPI");
-  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/settings")
@@ -25,27 +23,46 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await signIn.email({
+    const { error } = await requestPasswordReset({
       email,
-      password,
-      callbackURL: "/dashboard",
+      redirectTo: "/reset-password",
     });
 
     if (error) {
-      setError(error.message || "Login failed.");
+      setError(error.message || "Something went wrong.");
       setLoading(false);
     } else {
-      router.push("/dashboard");
+      setSent(true);
     }
+  }
+
+  if (sent) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-6 text-center">
+          <h1 className="text-2xl font-bold">Check your email</h1>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            If an account exists for <strong>{email}</strong>, we&apos;ve sent
+            a link to reset your password.
+          </p>
+          <Link
+            href="/login"
+            className="inline-block font-medium underline"
+          >
+            Back to sign in
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Sign in</h1>
+          <h1 className="text-2xl font-bold">Reset your password</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Welcome back to {appName}
+            Enter your {appName} email and we&apos;ll send you a reset link.
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,37 +84,18 @@ export default function LoginPage() {
               className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </div>
-          <div className="flex items-center justify-end">
-            <Link href="/forgot-password" className="text-sm font-medium underline">
-              Forgot password?
-            </Link>
-          </div>
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-md bg-black px-4 py-2 text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
         <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium underline">
-            Create one
+          Remember your password?{" "}
+          <Link href="/login" className="font-medium underline">
+            Sign in
           </Link>
         </p>
       </div>
