@@ -5,7 +5,11 @@ import { eq, asc } from "drizzle-orm";
 
 export default async function LandingPage() {
   const settingsRows = await db.select().from(siteSettings).limit(1);
-  const settings = settingsRows[0] ?? { appName: "TESTAPI", logoUrl: null, faviconUrl: null };
+  const settings = settingsRows[0] ?? {
+    appName: "TESTAPI",
+    logoUrl: null,
+    faviconUrl: null,
+  };
 
   const activePlans = await db
     .select()
@@ -27,7 +31,7 @@ export default async function LandingPage() {
               Public API
             </Link>
             <Link
-              href="/docs"
+              href="/public-docs"
               className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
             >
               Docs
@@ -50,7 +54,7 @@ export default async function LandingPage() {
 
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <h1 className="max-w-3xl text-5xl font-bold tracking-tight sm:text-6xl">
+        <h1 className="max-w-3xl text-5xl py-10 font-bold tracking-tight sm:text-6xl">
           Your API playground for learning and testing
         </h1>
         <p className="mt-6 max-w-xl text-lg text-zinc-600 dark:text-zinc-400">
@@ -65,7 +69,7 @@ export default async function LandingPage() {
             Start for free
           </Link>
           <Link
-            href="/docs"
+            href="/public-docs"
             className="rounded-md border border-zinc-300 px-6 py-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
             Read the docs
@@ -75,9 +79,7 @@ export default async function LandingPage() {
         {/* Features */}
         <div className="mt-24 grid max-w-4xl gap-8 sm:grid-cols-3">
           <Link href="/public-api" className="group text-left">
-            <h3 className="font-semibold group-hover:underline">
-              Public API
-            </h3>
+            <h3 className="font-semibold group-hover:underline">Public API</h3>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Access predefined collections without authentication. Great for
               testing and learning.
@@ -105,7 +107,7 @@ export default async function LandingPage() {
         {/* Plans */}
         {activePlans.length > 0 && (
           <div
-            className={`mt-24 grid max-w-3xl gap-8 ${
+            className={`mt-24 grid max-w-3xl gap-8 my-5 ${
               activePlans.length === 1 ? "sm:grid-cols-1" : "sm:grid-cols-2"
             }`}
           >
@@ -127,7 +129,7 @@ export default async function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className={`mt-6 inline-block rounded-md px-4 py-2 text-sm ${
+                  className={`mt-6 inline-block rounded-md px-4 py-2 text-sm w-full  text-center ${
                     i === activePlans.length - 1
                       ? "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                       : "border border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
@@ -143,7 +145,10 @@ export default async function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        <p>&copy; {new Date().getFullYear()} {settings.appName}. All rights reserved.</p>
+        <p>
+          &copy; {new Date().getFullYear()} {settings.appName}. All rights
+          reserved.
+        </p>
       </footer>
     </div>
   );

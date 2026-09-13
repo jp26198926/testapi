@@ -1,4 +1,9 @@
-import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { plans } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -70,72 +75,6 @@ Delete a record:
 DELETE ${API_BASE}/api/collection/{collectionId}/{slug}/{recordId}`,
   },
   {
-    title: "API Keys",
-    content: `List your API keys:
-GET ${API_BASE}/api/keys
-
-Create a new API key:
-POST ${API_BASE}/api/keys
-{ "name": "My Key", "expiresInDays": 90 }
-
-expiresInDays is optional (1-365). If omitted, the key never expires.
-The raw key is returned only on creation — save it immediately.
-
-Reveal an API key (decrypt and copy):
-GET ${API_BASE}/api/keys/{keyId}/reveal
-
-Revoke an API key:
-DELETE ${API_BASE}/api/keys/{keyId}`,
-  },
-  {
-    title: "Subscriptions & Billing",
-    content: `Requires authentication.
-
-Get your current subscription:
-GET ${API_BASE}/api/subscriptions
-
-Returns { data: { plan, subscription } } where plan is "free" or "pro".
-
-Create a PayPal subscription (upgrade to Pro):
-POST ${API_BASE}/api/subscriptions
-
-Returns a PayPal approval URL to redirect the user to.
-
-Get subscription history (paginated):
-GET ${API_BASE}/api/subscriptions/history?page=1&limit=20
-
-Get payment records (paginated):
-GET ${API_BASE}/api/payments?page=1&limit=20`,
-  },
-  {
-    title: "Plans (Admin)",
-    content: `List active plans (public, no auth required):
-GET ${API_BASE}/api/plans
-
-List all plans including inactive (admin only):
-GET ${API_BASE}/api/plans?all=true
-
-Create a plan (admin only):
-POST ${API_BASE}/api/plans
-{ "name": "Pro", "price": "$19/mo", "features": ["Unlimited"], "isActive": true, "sortOrder": 1 }
-
-Update a plan (admin only):
-PATCH ${API_BASE}/api/plans/{planId}
-{ "name": "Updated Name", "isActive": false }
-
-Delete a plan (admin only):
-DELETE ${API_BASE}/api/plans/{planId}`,
-  },
-  {
-    title: "Site Settings (Admin)",
-    content: `Get site settings:
-GET ${API_BASE}/api/settings
-
-Update site settings (admin only):
-PATCH ${API_BASE}/api/settings
-{ "appName": "My App", "logoUrl": "https://...", "faviconUrl": "https://..." }`,
-  },
-  {
     title: "File Upload",
     content: `Upload an image to Cloudinary:
 POST ${API_BASE}/api/upload
@@ -193,21 +132,18 @@ Common error codes:
 
 When exceeded, returns 429 Too Many Requests.`,
   },
-  {
-    title: "Free vs Pro",
-    content: `Free plan:
-- 5 collections maximum
-- 50 records per collection
-- 120 requests/minute
-
-Pro plan ($9/month):
-- Unlimited collections
-- Unlimited records
-- 600 requests/minute`,
-  },
 ];
 
-export default function DocsPage() {
+export default async function DocsPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
+
+  const activePlans = await db
+    .select()
+    .from(plans)
+    .where(eq(plans.isActive, true))
+    .orderBy(asc(plans.sortOrder));
+
   return (
     <div className="space-y-8">
       <div>
@@ -229,6 +165,34 @@ export default function DocsPage() {
             </pre>
           </section>
         ))}
+
+        {activePlans.length > 0 && (
+          <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+            <h2 className="text-lg font-semibold">Free vs Pro</h2>
+            <div
+              className={`mt-4 grid gap-6 ${
+                activePlans.length === 1
+                  ? "sm:grid-cols-1"
+                  : "sm:grid-cols-2"
+              }`}
+            >
+              {activePlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="rounded-lg border border-zinc-200 p-5 dark:border-zinc-800"
+                >
+                  <h3 className="font-semibold">{plan.name}</h3>
+                  <p className="mt-1 text-2xl font-bold">{plan.price}</p>
+                  <ul className="mt-3 space-y-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    {(plan.features as string[]).map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

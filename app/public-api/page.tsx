@@ -31,6 +31,14 @@ export default function PublicApiPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
+  const [appName, setAppName] = useState("TESTAPI");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => { if (d.data?.appName) setAppName(d.data.appName); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/public")
@@ -74,7 +82,7 @@ export default function PublicApiPage() {
       <header className="border-b border-zinc-200 dark:border-zinc-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-xl font-bold">
-            TESTAPI
+            {appName}
           </Link>
           <div className="flex items-center gap-4">
             <Link
@@ -84,7 +92,7 @@ export default function PublicApiPage() {
               Public API
             </Link>
             <Link
-              href="/docs"
+              href="/public-docs"
               className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
             >
               Docs
@@ -318,7 +326,7 @@ export default function PublicApiPage() {
               Sign up free
             </Link>
             <Link
-              href="/docs"
+              href="/public-docs"
               className="rounded-md border border-zinc-300 px-6 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
             >
               Read the docs
@@ -329,7 +337,7 @@ export default function PublicApiPage() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        <p>&copy; {new Date().getFullYear()} TESTAPI. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} {appName}. All rights reserved.</p>
       </footer>
     </div>
   );
