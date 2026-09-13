@@ -261,7 +261,7 @@ export default function BillingPage() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Billing</h1>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Current Plan */}
         <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="text-lg font-semibold">Current Plan</h2>
@@ -306,7 +306,7 @@ export default function BillingPage() {
 
       {/* Plans (dynamic from DB, only active) — hidden for admin */}
       {!admin && plans.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {plans.map((p) => {
             const isCurrent =
               p.name.toLowerCase() === plan.toLowerCase();

@@ -252,7 +252,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium">Logo</label>
-            <div className="mt-1 flex items-center gap-3">
+            <div className="mt-1 flex flex-wrap items-center gap-3">
               {logoUrl && (
                 <img src={logoUrl} alt="Logo" className="h-10 w-10 rounded object-cover" />
               )}
@@ -288,7 +288,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium">Favicon</label>
-            <div className="mt-1 flex items-center gap-3">
+            <div className="mt-1 flex flex-wrap items-center gap-3">
               {faviconUrl && (
                 <img src={faviconUrl} alt="Favicon" className="h-8 w-8 rounded object-cover" />
               )}
@@ -334,7 +334,7 @@ export default function SettingsPage() {
 
       {/* Plans Management */}
       <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Plans</h2>
           <button
             onClick={() => openPlanForm()}
@@ -348,7 +348,7 @@ export default function SettingsPage() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`flex items-center justify-between rounded-lg border p-4 ${
+              className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 ${
                 plan.isActive
                   ? "border-zinc-200 dark:border-zinc-800"
                   : "border-dashed border-zinc-300 opacity-60 dark:border-zinc-700"
@@ -397,7 +397,7 @@ export default function SettingsPage() {
 
       {/* Plan Form Modal */}
       {showPlanForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-zinc-900">
             <h3 className="text-lg font-semibold">
               {editingPlan ? "Edit Plan" : "Add Plan"}

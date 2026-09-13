@@ -263,7 +263,7 @@ export default function CollectionDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <Link href="/collections" className="text-sm text-zinc-500 hover:underline">
           &larr; Back
         </Link>
@@ -315,13 +315,13 @@ export default function CollectionDetailPage({
           {inputMode === "form" ? (
             <div className="space-y-2">
               {formFields.map((field, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
                     type="text"
                     value={field.key}
                     onChange={(e) => updateField(i, { key: e.target.value })}
                     placeholder="field name"
-                    className="w-1/3 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 sm:w-1/3"
                   />
                   <input
                     type="text"
@@ -522,13 +522,13 @@ export default function CollectionDetailPage({
                           expandedEndpoint === ep.key ? null : ep.key
                         );
                     }}
-                    className="flex w-full cursor-pointer items-center gap-3 p-3 text-left"
+                    className="flex w-full cursor-pointer flex-wrap items-center gap-2 p-3 text-left sm:gap-3"
                   >
                     <MethodBadge method={ep.method} />
-                    <code className="flex-1 text-sm text-zinc-800 dark:text-zinc-200">
+                    <code className="min-w-0 flex-1 text-sm text-zinc-800 dark:text-zinc-200">
                       {ep.path}
                     </code>
-                    <span className="text-xs text-zinc-500">{ep.desc}</span>
+                    <span className="hidden text-xs text-zinc-500 sm:inline">{ep.desc}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

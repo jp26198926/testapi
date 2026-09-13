@@ -77,7 +77,7 @@ export default function ApiKeysPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">API Keys</h1>
         <button
           onClick={() => setShowCreate(!showCreate)}
@@ -153,7 +153,7 @@ export default function ApiKeysPage() {
                   : "border-zinc-200 dark:border-zinc-800"
               }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-medium">{key.name}</p>
                   <p className="font-mono text-sm text-zinc-500">
@@ -167,7 +167,7 @@ export default function ApiKeysPage() {
                       ` | Expires: ${new Date(key.expiresAt).toLocaleDateString()}`}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {key.revokedAt ? (
                     <span className="rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-500 dark:bg-zinc-800">
                       Revoked

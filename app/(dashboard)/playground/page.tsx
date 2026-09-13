@@ -115,14 +115,14 @@ export default function PlaygroundPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">API Playground</h1>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Request panel */}
         <div className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <select
               value={method}
               onChange={(e) => handleMethodChange(e.target.value as typeof method)}
-              className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+              className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto"
             >
               {METHODS.map((m) => (
                 <option key={m} value={m}>
@@ -176,7 +176,7 @@ export default function PlaygroundPage() {
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={handleSend}
               disabled={loading}
@@ -232,7 +232,7 @@ export default function PlaygroundPage() {
               </button>
             )}
           </div>
-          <pre className="min-h-[300px] overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <pre className="min-h-[200px] overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-950 md:min-h-[300px]">
             {response || "Response will appear here..."}
           </pre>
         </div>

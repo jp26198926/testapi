@@ -147,7 +147,7 @@ export default async function PublicDocsPage() {
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
           <Link href="/" className="text-xl font-bold">
             {appName}
           </Link>
@@ -155,7 +155,7 @@ export default async function PublicDocsPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-6 md:py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">API Documentation</h1>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">

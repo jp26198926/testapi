@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { plans, siteSettings } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
+import LandingNav from "@/components/landing-nav";
 
 export default async function LandingPage() {
   const settingsRows = await db.select().from(siteSettings).limit(1);
@@ -20,40 +21,15 @@ export default async function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <header className="relative border-b border-zinc-200 dark:border-zinc-800">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
           <span className="text-xl font-bold">{settings.appName}</span>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/public-api"
-              className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-            >
-              Public API
-            </Link>
-            <Link
-              href="/public-docs"
-              className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-            >
-              Docs
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Get started
-            </Link>
-          </div>
+          <LandingNav />
         </div>
       </header>
 
       {/* Hero */}
-      <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 text-center md:px-6">
         <h1 className="max-w-3xl text-5xl py-10 font-bold tracking-tight sm:text-6xl">
           Your API playground for learning and testing
         </h1>
@@ -77,7 +53,7 @@ export default async function LandingPage() {
         </div>
 
         {/* Features */}
-        <div className="mt-24 grid max-w-4xl gap-8 sm:grid-cols-3">
+        <div className="mt-24 grid max-w-4xl gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <Link href="/public-api" className="group text-left">
             <h3 className="font-semibold group-hover:underline">Public API</h3>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
