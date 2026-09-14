@@ -40,40 +40,49 @@ async function verifyRecordOwnership(
   return rec.length > 0 ? rec[0] : null;
 }
 
-// GET /api/collection/[collectionId]/[slug]/[recordId]
+// GET /api/collection/[collectionId]/[slug]/[recordId] (public read)
 export async function GET(
   request: Request,
   {
     params,
   }: { params: Promise<{ collectionId: string; slug: string; recordId: string }> }
 ) {
-  let user;
-  try {
-    ({ user } = await requireAuth());
-  } catch {
-    return ERRORS.UNAUTHORIZED();
-  }
-
   const { collectionId: rawColId, slug, recordId: rawRecId } = await params;
   const collectionId = parsePositiveInt(rawColId);
   const recordId = parsePositiveInt(rawRecId);
   if (collectionId === null || recordId === null) {
     return ERRORS.BAD_REQUEST("Invalid ID parameter.");
   }
-  const record = await verifyRecordOwnership(
-    user.id,
-    collectionId,
-    slug,
-    recordId
-  );
 
-  if (!record) return ERRORS.NOT_FOUND();
+  const col = await db
+    .select()
+    .from(collections)
+    .where(eq(collections.id, collectionId))
+    .limit(1);
 
+  if (col.length === 0 || col[0].slug !== slug) {
+    return ERRORS.NOT_FOUND();
+  }
+
+  const rec = await db
+    .select()
+    .from(records)
+    .where(
+      and(
+        eq(records.id, recordId),
+        eq(records.collectionId, collectionId)
+      )
+    )
+    .limit(1);
+
+  if (rec.length === 0) return ERRORS.NOT_FOUND();
+
+  const r = rec[0];
   return apiSuccess({
-    id: record.id,
-    data: record.data,
-    createdAt: record.createdAt,
-    updatedAt: record.updatedAt,
+    id: r.id,
+    data: r.data,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
   });
 }
 

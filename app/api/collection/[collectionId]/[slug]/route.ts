@@ -15,18 +15,11 @@ import { canCreateRecord, getRateLimitTier } from "@/lib/api/plans";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { parsePositiveInt } from "@/lib/api/params";
 
-// GET /api/collection/[collectionId]/[slug] — list records
+// GET /api/collection/[collectionId]/[slug] — list records (public read)
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ collectionId: string; slug: string }> }
 ) {
-  let user;
-  try {
-    ({ user } = await requireAuth());
-  } catch {
-    return ERRORS.UNAUTHORIZED();
-  }
-
   const { collectionId: rawId, slug } = await params;
   const collectionId = parsePositiveInt(rawId);
   if (collectionId === null) return ERRORS.BAD_REQUEST("Invalid collection ID.");
@@ -39,16 +32,10 @@ export async function GET(
     ? parsed.data
     : { page: 1, limit: 20 };
 
-  // Verify ownership and slug
   const col = await db
     .select()
     .from(collections)
-    .where(
-      and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, user.id)
-      )
-    )
+    .where(eq(collections.id, collectionId))
     .limit(1);
 
   if (col.length === 0 || col[0].slug !== slug) {
