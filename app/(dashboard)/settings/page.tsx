@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
+import UsersSection from "./users-section";
 
 type SiteSettings = {
   appName: string;
@@ -394,6 +395,8 @@ export default function SettingsPage() {
           ))}
         </div>
       </div>
+
+      <UsersSection />
 
       {/* Plan Form Modal */}
       {showPlanForm && (
