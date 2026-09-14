@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Brand from "@/components/brand";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,12 +12,16 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [appName, setAppName] = useState("TESTAPI");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => { if (d.data?.appName) setAppName(d.data.appName); })
+      .then((d) => {
+        if (d.data?.appName) setAppName(d.data.appName);
+        if (d.data?.logoUrl) setLogoUrl(d.data.logoUrl);
+      })
       .catch(() => {});
   }, []);
 
@@ -43,7 +48,16 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Sign in</h1>
+          <div className="flex justify-center">
+            <Brand
+              appName={appName}
+              logoUrl={logoUrl}
+              href={null}
+              logoSize={48}
+              textClassName="text-xl font-bold"
+            />
+          </div>
+          <h1 className="mt-4 text-2xl font-bold">Sign in</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             Welcome back to {appName}
           </p>

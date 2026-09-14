@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
+import Brand from "@/components/brand";
 
 const BASE_NAV = [
   { href: "/dashboard", label: "Dashboard" },
@@ -24,6 +25,7 @@ export default function DashboardLayout({
   const { data: session } = useSession();
   const [isAdmin, setIsAdmin] = useState(false);
   const [appName, setAppName] = useState("TESTAPI");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +38,10 @@ export default function DashboardLayout({
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => { if (d.data?.appName) setAppName(d.data.appName); })
+      .then((d) => {
+        if (d.data?.appName) setAppName(d.data.appName);
+        if (d.data?.logoUrl) setLogoUrl(d.data.logoUrl);
+      })
       .catch(() => {});
   }, []);
 
@@ -51,9 +56,7 @@ export default function DashboardLayout({
       <aside className="hidden w-64 border-r border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 md:block">
         <div className="flex h-full flex-col">
           <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-            <Link href="/" className="text-lg font-bold">
-              {appName}
-            </Link>
+            <Brand appName={appName} logoUrl={logoUrl} />
           </div>
           <nav className="flex-1 space-y-1 px-3 py-4">
             {navItems.map((item) => {
@@ -99,13 +102,9 @@ export default function DashboardLayout({
           />
           <div className="fixed inset-y-0 left-0 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
             <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-              <Link
-                href="/"
-                className="text-lg font-bold"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {appName}
-              </Link>
+              <div onClick={() => setMobileMenuOpen(false)}>
+                <Brand appName={appName} logoUrl={logoUrl} />
+              </div>
             </div>
             <nav className="flex-1 space-y-1 px-3 py-4">
               {navItems.map((item) => {
@@ -150,9 +149,7 @@ export default function DashboardLayout({
       {/* Mobile header */}
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 md:hidden">
-          <Link href="/" className="text-lg font-bold">
-            {appName}
-          </Link>
+          <Brand appName={appName} logoUrl={logoUrl} />
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="rounded-md p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"

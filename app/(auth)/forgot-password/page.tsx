@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { requestPasswordReset } from "@/lib/auth-client";
 import Link from "next/link";
+import Brand from "@/components/brand";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -10,11 +11,15 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [appName, setAppName] = useState("TESTAPI");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => { if (d.data?.appName) setAppName(d.data.appName); })
+      .then((d) => {
+        if (d.data?.appName) setAppName(d.data.appName);
+        if (d.data?.logoUrl) setLogoUrl(d.data.logoUrl);
+      })
       .catch(() => {});
   }, []);
 
@@ -60,7 +65,16 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Reset your password</h1>
+          <div className="flex justify-center">
+            <Brand
+              appName={appName}
+              logoUrl={logoUrl}
+              href={null}
+              logoSize={48}
+              textClassName="text-xl font-bold"
+            />
+          </div>
+          <h1 className="mt-4 text-2xl font-bold">Reset your password</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             Enter your {appName} email and we&apos;ll send you a reset link.
           </p>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import Brand from "@/components/brand";
 
 type PublicCollection = {
   id: string;
@@ -32,12 +33,16 @@ export default function PublicApiPage() {
   const [total, setTotal] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
   const [appName, setAppName] = useState("TESTAPI");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => { if (d.data?.appName) setAppName(d.data.appName); })
+      .then((d) => {
+        if (d.data?.appName) setAppName(d.data.appName);
+        if (d.data?.logoUrl) setLogoUrl(d.data.logoUrl);
+      })
       .catch(() => {});
   }, []);
 
@@ -82,9 +87,11 @@ export default function PublicApiPage() {
       {/* Header */}
       <header className="relative border-b border-zinc-200 dark:border-zinc-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-          <Link href="/" className="text-xl font-bold">
-            {appName}
-          </Link>
+          <Brand
+            appName={appName}
+            logoUrl={logoUrl}
+            textClassName="text-xl font-bold"
+          />
 
           {/* Desktop nav */}
           <div className="hidden items-center gap-4 md:flex">

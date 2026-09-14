@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { plans, siteSettings } from "@/lib/db/schema";
+import { plans } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import LandingNav from "@/components/landing-nav";
+import Brand from "@/components/brand";
+import { getSiteSettings } from "@/lib/settings";
 
 export default async function LandingPage() {
-  const settingsRows = await db.select().from(siteSettings).limit(1);
-  const settings = settingsRows[0] ?? {
-    appName: "TESTAPI",
-    logoUrl: null,
-    faviconUrl: null,
-  };
+  const settings = await getSiteSettings();
 
   const activePlans = await db
     .select()
@@ -23,7 +20,11 @@ export default async function LandingPage() {
       {/* Header */}
       <header className="relative border-b border-zinc-200 dark:border-zinc-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-          <span className="text-xl font-bold">{settings.appName}</span>
+          <Brand
+            appName={settings.appName}
+            logoUrl={settings.logoUrl}
+            textClassName="text-xl font-bold"
+          />
           <LandingNav />
         </div>
       </header>

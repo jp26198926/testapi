@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getSiteSettings } from "@/lib/settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,13 +13,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "TESTAPI — API Playground",
-  description:
-    "Your API playground for learning and testing CRUD APIs. Create collections, manage records, and test RESTful endpoints.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { appName } = await getSiteSettings();
+  return {
+    title: `${appName} — API Playground`,
+    description:
+      "Your API playground for learning and testing CRUD APIs. Create collections, manage records, and test RESTful endpoints.",
+  };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"

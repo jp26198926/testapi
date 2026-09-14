@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { plans, siteSettings } from "@/lib/db/schema";
+import { plans } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import DocsNav from "@/components/docs-nav";
 import CopyButton from "@/components/copy-button";
+import Brand from "@/components/brand";
+import { getSiteSettings } from "@/lib/settings";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -140,17 +142,19 @@ export default async function PublicDocsPage() {
     .where(eq(plans.isActive, true))
     .orderBy(asc(plans.sortOrder));
 
-  const settingsRows = await db.select().from(siteSettings).limit(1);
-  const appName = settingsRows[0]?.appName ?? "TESTAPI";
+  const settings = await getSiteSettings();
+  const appName = settings.appName;
 
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="border-b border-zinc-200 dark:border-zinc-800">
         <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-          <Link href="/" className="text-xl font-bold">
-            {appName}
-          </Link>
+          <Brand
+            appName={settings.appName}
+            logoUrl={settings.logoUrl}
+            textClassName="text-xl font-bold"
+          />
           <DocsNav />
         </div>
       </header>

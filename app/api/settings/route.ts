@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { siteSettings } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/api/auth";
@@ -31,6 +32,7 @@ export async function PATCH(request: Request) {
   const rows = await db.select().from(siteSettings).limit(1);
   if (rows.length === 0) {
     const [created] = await db.insert(siteSettings).values(updates).returning();
+    revalidateTag("site-settings", { expire: 0 });
     return apiSuccess(created);
   }
 
@@ -39,5 +41,6 @@ export async function PATCH(request: Request) {
     .set(updates)
     .returning();
 
+  revalidateTag("site-settings", { expire: 0 });
   return apiSuccess(updated);
 }
