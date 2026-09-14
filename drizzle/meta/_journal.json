@@ -50,6 +50,13 @@
       "when": 1789348000000,
       "tag": "0006_one_time_paypal",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789382067820,
+      "tag": "0007_mute_purple_man",
+      "breakpoints": true
     }
   ]
 }

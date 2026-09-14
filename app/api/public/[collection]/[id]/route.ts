@@ -2,13 +2,16 @@ import { db } from "@/lib/db";
 import { collections, records } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { apiSuccess, ERRORS } from "@/lib/api/response";
+import { parsePositiveInt } from "@/lib/api/params";
 
 // GET /api/public/[collection]/[id] — get a single record from a public collection
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ collection: string; id: string }> }
 ) {
-  const { collection: slug, id } = await params;
+  const { collection: slug, id: rawId } = await params;
+  const id = parsePositiveInt(rawId);
+  if (id === null) return ERRORS.BAD_REQUEST("Invalid record ID.");
 
   const col = await db
     .select()

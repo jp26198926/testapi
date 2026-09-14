@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 type PublicCollection = {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   description: string | null;
@@ -11,7 +11,7 @@ type PublicCollection = {
 };
 
 type PublicRecord = {
-  id: string;
+  id: number;
   createdAt: string;
   updatedAt: string;
   [key: string]: unknown;
@@ -27,7 +27,7 @@ export default function PublicApiPage() {
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | number | null>(null);
 
   useEffect(() => {
     fetch("/api/public")
@@ -54,7 +54,7 @@ export default function PublicApiPage() {
       .catch(() => setRecordsLoading(false));
   }, [selected, page, limit]);
 
-  function copyText(text: string, id: string) {
+  function copyText(text: string, id: string | number) {
     navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);

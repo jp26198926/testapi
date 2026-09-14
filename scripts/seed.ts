@@ -233,7 +233,7 @@ async function seed() {
       .where(eq(collections.slug, col.slug))
       .limit(1);
 
-    let collectionId: string;
+    let collectionId: number;
 
     if (existing.length > 0) {
       collectionId = existing[0].id;

@@ -75,7 +75,7 @@ export const verifications = pgTable("verifications", {
 export const collections = pgTable(
   "collections",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -98,8 +98,8 @@ export const collections = pgTable(
 export const records = pgTable(
   "records",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    collectionId: uuid("collection_id")
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    collectionId: integer("collection_id")
       .notNull()
       .references(() => collections.id, { onDelete: "cascade" }),
     data: jsonb("data").notNull().default({}),

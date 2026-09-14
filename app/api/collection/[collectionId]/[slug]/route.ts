@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/validation";
 import { canCreateRecord, getRateLimitTier } from "@/lib/api/plans";
 import { checkRateLimit } from "@/lib/api/rate-limit";
+import { parsePositiveInt } from "@/lib/api/params";
 
 // GET /api/collection/[collectionId]/[slug] — list records
 export async function GET(
@@ -26,7 +27,9 @@ export async function GET(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, slug } = await params;
+  const { collectionId: rawId, slug } = await params;
+  const collectionId = parsePositiveInt(rawId);
+  if (collectionId === null) return ERRORS.BAD_REQUEST("Invalid collection ID.");
   const url = new URL(request.url);
   const parsed = paginationSchema.safeParse({
     page: url.searchParams.get("page") ?? undefined,
@@ -89,7 +92,9 @@ export async function POST(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, slug } = await params;
+  const { collectionId: rawId, slug } = await params;
+  const collectionId = parsePositiveInt(rawId);
+  if (collectionId === null) return ERRORS.BAD_REQUEST("Invalid collection ID.");
 
   // Rate limit
   const tier = await getRateLimitTier(user.id, user);

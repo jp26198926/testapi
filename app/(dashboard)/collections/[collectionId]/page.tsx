@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 
 type CollectionRecord = {
-  id: string;
+  id: number;
   data: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -47,7 +47,7 @@ export default function CollectionDetailPage({
   const [jsonInput, setJsonInput] = useState("{}");
   const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editJson, setEditJson] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -226,7 +226,7 @@ export default function CollectionDetailPage({
     setAdding(false);
   }
 
-  async function handleUpdate(recordId: string) {
+  async function handleUpdate(recordId: number) {
     setError("");
     try {
       const data = JSON.parse(editJson);
@@ -251,7 +251,7 @@ export default function CollectionDetailPage({
     }
   }
 
-  async function handleDelete(recordId: string) {
+  async function handleDelete(recordId: number) {
     if (!confirm("Delete this record?")) return;
 
     const res = await fetch(

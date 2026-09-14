@@ -4,13 +4,14 @@ import { eq, and } from "drizzle-orm";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, ERRORS } from "@/lib/api/response";
 import { updateRecordSchema } from "@/lib/api/validation";
+import { parsePositiveInt } from "@/lib/api/params";
 
 // Helper to verify record ownership through collection, including slug check
 async function verifyRecordOwnership(
   userId: string,
-  collectionId: string,
+  collectionId: number,
   slug: string,
-  recordId: string
+  recordId: number
 ) {
   const col = await db
     .select()
@@ -53,7 +54,12 @@ export async function GET(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, slug, recordId } = await params;
+  const { collectionId: rawColId, slug, recordId: rawRecId } = await params;
+  const collectionId = parsePositiveInt(rawColId);
+  const recordId = parsePositiveInt(rawRecId);
+  if (collectionId === null || recordId === null) {
+    return ERRORS.BAD_REQUEST("Invalid ID parameter.");
+  }
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
@@ -85,7 +91,12 @@ export async function PATCH(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, slug, recordId } = await params;
+  const { collectionId: rawColId, slug, recordId: rawRecId } = await params;
+  const collectionId = parsePositiveInt(rawColId);
+  const recordId = parsePositiveInt(rawRecId);
+  if (collectionId === null || recordId === null) {
+    return ERRORS.BAD_REQUEST("Invalid ID parameter.");
+  }
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
@@ -137,7 +148,12 @@ export async function PUT(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, slug, recordId } = await params;
+  const { collectionId: rawColId, slug, recordId: rawRecId } = await params;
+  const collectionId = parsePositiveInt(rawColId);
+  const recordId = parsePositiveInt(rawRecId);
+  if (collectionId === null || recordId === null) {
+    return ERRORS.BAD_REQUEST("Invalid ID parameter.");
+  }
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,
@@ -183,7 +199,12 @@ export async function DELETE(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId, slug, recordId } = await params;
+  const { collectionId: rawColId, slug, recordId: rawRecId } = await params;
+  const collectionId = parsePositiveInt(rawColId);
+  const recordId = parsePositiveInt(rawRecId);
+  if (collectionId === null || recordId === null) {
+    return ERRORS.BAD_REQUEST("Invalid ID parameter.");
+  }
   const record = await verifyRecordOwnership(
     user.id,
     collectionId,

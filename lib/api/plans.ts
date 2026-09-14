@@ -59,7 +59,7 @@ export async function canCreateCollection(
   return currentCount < 5;
 }
 
-export async function getRecordCount(collectionId: string): Promise<number> {
+export async function getRecordCount(collectionId: number): Promise<number> {
   const { records } = await import("@/lib/db/schema");
   const result = await db
     .select({ count: count() })
@@ -70,7 +70,7 @@ export async function getRecordCount(collectionId: string): Promise<number> {
 
 export async function canCreateRecord(
   userId: string,
-  collectionId: string,
+  collectionId: number,
   user?: User
 ): Promise<boolean> {
   if (user && isAdmin(user)) return true;

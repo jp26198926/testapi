@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type Collection = {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   description: string | null;
@@ -57,7 +57,7 @@ export default function CollectionsPage() {
     setCreating(false);
   }
 
-  async function handleDelete(id: string, collName: string) {
+  async function handleDelete(id: number, collName: string) {
     if (!confirm(`Delete "${collName}" and all its records?`)) return;
 
     const res = await fetch(`/api/collection/${id}`, { method: "DELETE" });

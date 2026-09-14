@@ -4,6 +4,7 @@ import { eq, and, ne } from "drizzle-orm";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, ERRORS } from "@/lib/api/response";
 import { updateCollectionSchema } from "@/lib/api/validation";
+import { parsePositiveInt } from "@/lib/api/params";
 import { toSlug } from "@/lib/utils";
 
 // GET /api/collection/[collectionId] — get single collection
@@ -18,7 +19,9 @@ export async function GET(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId } = await params;
+  const { collectionId: rawId } = await params;
+  const collectionId = parsePositiveInt(rawId);
+  if (collectionId === null) return ERRORS.BAD_REQUEST("Invalid collection ID.");
 
   const col = await db
     .select()
@@ -50,7 +53,9 @@ export async function PATCH(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId } = await params;
+  const { collectionId: rawId } = await params;
+  const collectionId = parsePositiveInt(rawId);
+  if (collectionId === null) return ERRORS.BAD_REQUEST("Invalid collection ID.");
   const body = await request.json();
   const parsed = updateCollectionSchema.safeParse(body);
   if (!parsed.success) {
@@ -126,7 +131,9 @@ export async function DELETE(
     return ERRORS.UNAUTHORIZED();
   }
 
-  const { collectionId } = await params;
+  const { collectionId: rawId } = await params;
+  const collectionId = parsePositiveInt(rawId);
+  if (collectionId === null) return ERRORS.BAD_REQUEST("Invalid collection ID.");
 
   const col = await db
     .select()
