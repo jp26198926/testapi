@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   DataTable,
   type DataTableColumn,
@@ -15,6 +15,9 @@ type Plan = {
   id: string;
   name: string;
   price: string;
+  amount: string | null;
+  currency: string;
+  durationDays: number;
   features: string[];
   isActive: boolean;
   sortOrder: number;
@@ -112,6 +115,8 @@ const paymentColumns: DataTableColumn<PaymentRecord>[] = [
         pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
         denied: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
         refunded: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+        abandoned: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+        mismatch: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
       };
       return (
         <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${colors[status] || ""}`}>
@@ -137,7 +142,7 @@ export default function BillingPage() {
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [capturing, setCapturing] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [banner, setBanner] = useState<null | "success" | "cancelled">(null);
   const [upgradeError, setUpgradeError] = useState("");
@@ -168,13 +173,89 @@ export default function BillingPage() {
       .catch(() => {});
   }, []);
 
+  const fetchPaymentRecords = useCallback(() => {
+    setPaymentLoading(true);
+    fetch(`/api/payments?page=${paymentPage}&limit=${paymentLimit}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setPaymentRecords(d.data || []);
+        if (d.pagination) {
+          setPaymentTotal(d.pagination.total);
+          setPaymentTotalPages(d.pagination.totalPages);
+        }
+        setPaymentLoading(false);
+      })
+      .catch(() => setPaymentLoading(false));
+  }, [paymentPage, paymentLimit]);
+
+  const fetchBillingRecords = useCallback(() => {
+    setBillingLoading(true);
+    fetch(`/api/subscriptions/history?page=${billingPage}&limit=${billingLimit}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setBillingRecords(d.data || []);
+        if (d.pagination) {
+          setBillingTotal(d.pagination.total);
+          setBillingTotalPages(d.pagination.totalPages);
+        }
+        setBillingLoading(false);
+      })
+      .catch(() => setBillingLoading(false));
+  }, [billingPage, billingLimit]);
+
+  const captureStartedRef = useRef(false);
+
+  // PayPal return: cancelled or capture order id
   useEffect(() => {
+    if (captureStartedRef.current) return;
+
     const params = new URLSearchParams(window.location.search);
-    if (params.get("success") === "true") setBanner("success");
-    else if (params.get("cancelled") === "true") setBanner("cancelled");
-    if (params.has("success") || params.has("cancelled")) {
-      window.history.replaceState({}, "", window.location.pathname);
+    if (params.get("cancelled") === "true") {
+      setBanner("cancelled");
+      window.history.replaceState({}, "", "/billing");
+      return;
     }
+
+    // Prefer our own order param; PayPal also appends token=orderId
+    const orderId =
+      params.get("order") || params.get("token") || sessionStorage.getItem("paypalOrderId");
+    if (!orderId) return;
+    sessionStorage.removeItem("paypalOrderId");
+    captureStartedRef.current = true;
+
+    setCapturing(true);
+    fetch("/api/billing/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    })
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d.error?.message) {
+          setUpgradeError(
+            d.error?.message ||
+              "Could not verify payment. Check Payment Records or contact support."
+          );
+          setBanner(null);
+        } else {
+          setUpgradeError("");
+          setBanner("success");
+          refetchSubscription();
+          fetchBillingRecords();
+          fetchPaymentRecords();
+        }
+      })
+      .catch(() => {
+        setUpgradeError(
+          "Could not verify payment. Check Payment Records or contact support."
+        );
+        setBanner(null);
+      })
+      .finally(() => {
+        setCapturing(false);
+        window.history.replaceState({}, "", "/billing");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -197,45 +278,6 @@ export default function BillingPage() {
       .catch(() => {});
   }, []);
 
-  // Poll briefly after PayPal return — webhook may lag the redirect
-  useEffect(() => {
-    if (banner !== "success") return;
-    const timers = [2000, 5000, 10000].map((ms) =>
-      setTimeout(refetchSubscription, ms)
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [banner, refetchSubscription]);
-
-  const fetchBillingRecords = useCallback(() => {
-    setBillingLoading(true);
-    fetch(`/api/subscriptions/history?page=${billingPage}&limit=${billingLimit}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setBillingRecords(d.data || []);
-        if (d.pagination) {
-          setBillingTotal(d.pagination.total);
-          setBillingTotalPages(d.pagination.totalPages);
-        }
-        setBillingLoading(false);
-      })
-      .catch(() => setBillingLoading(false));
-  }, [billingPage, billingLimit]);
-
-  const fetchPaymentRecords = useCallback(() => {
-    setPaymentLoading(true);
-    fetch(`/api/payments?page=${paymentPage}&limit=${paymentLimit}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setPaymentRecords(d.data || []);
-        if (d.pagination) {
-          setPaymentTotal(d.pagination.total);
-          setPaymentTotalPages(d.pagination.totalPages);
-        }
-        setPaymentLoading(false);
-      })
-      .catch(() => setPaymentLoading(false));
-  }, [paymentPage, paymentLimit]);
-
   useEffect(() => {
     fetchBillingRecords();
   }, [fetchBillingRecords]);
@@ -244,53 +286,36 @@ export default function BillingPage() {
     fetchPaymentRecords();
   }, [fetchPaymentRecords]);
 
-  async function handleUpgrade(planLocalId?: string) {
+  function isPayable(p: Plan) {
+    return p.amount != null && Number(p.amount) > 0;
+  }
+
+  async function handlePay(planId: string) {
     setUpgrading(true);
     setUpgradeError("");
     try {
-      const res = await fetch("/api/subscriptions", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(planLocalId ? { planId: planLocalId } : {}),
+        body: JSON.stringify({ planId }),
       });
       const result = await res.json();
       if (!res.ok || result.error?.message) {
-        setUpgradeError(
-          result.error?.message || "Upgrade failed. Please try again."
-        );
+        setUpgradeError(result.error?.message || "Could not start checkout.");
         return;
       }
       if (result.data?.approvalUrl) {
+        if (result.data.orderId) {
+          sessionStorage.setItem("paypalOrderId", result.data.orderId);
+        }
         window.location.href = result.data.approvalUrl;
         return;
       }
-      setUpgradeError(
-        "PayPal did not return an approval URL. Check server logs and PayPal plan configuration."
-      );
+      setUpgradeError("PayPal did not return an approval URL.");
     } catch {
-      setUpgradeError("Network error while starting upgrade.");
+      setUpgradeError("Network error while starting checkout.");
     } finally {
       setUpgrading(false);
-    }
-  }
-
-  async function handleCancel() {
-    if (
-      !confirm(
-        "Cancel your Pro subscription? You keep Pro until the period ends."
-      )
-    ) {
-      return;
-    }
-    setCancelling(true);
-    try {
-      const res = await fetch("/api/subscriptions/cancel", { method: "POST" });
-      if (res.ok) {
-        refetchSubscription();
-        fetchBillingRecords();
-      }
-    } finally {
-      setCancelling(false);
     }
   }
 
@@ -327,11 +352,7 @@ export default function BillingPage() {
 
       {banner === "success" && (
         <div className="flex items-start justify-between rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
-          <span>
-            {sub?.status === "pending"
-              ? "Payment received. Activating your Pro subscription…"
-              : "Payment successful. Your Pro subscription is active."}
-          </span>
+          <span>Payment successful. Your Pro access has been updated.</span>
           <button
             onClick={() => setBanner(null)}
             className="ml-4 shrink-0 underline"
@@ -349,6 +370,11 @@ export default function BillingPage() {
           >
             Dismiss
           </button>
+        </div>
+      )}
+      {capturing && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300">
+          Verifying your payment…
         </div>
       )}
       {upgradeError && (
@@ -371,27 +397,19 @@ export default function BillingPage() {
           {sub && (
             <div className="mt-4 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
               <p>Status: {sub.status}</p>
-              {sub.status === "pending" && (
-                <p className="text-yellow-600 dark:text-yellow-400">
-                  Awaiting PayPal approval
-                </p>
-              )}
               {sub.currentPeriodEnd && (
                 <p>
-                  Renews:{" "}
-                  {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+                  {plan === "pro"
+                    ? `Pro ends: ${new Date(sub.currentPeriodEnd).toLocaleDateString()}`
+                    : `Period end: ${new Date(sub.currentPeriodEnd).toLocaleDateString()}`}
+                </p>
+              )}
+              {plan === "pro" && sub.status === "active" && (
+                <p className="text-zinc-500 dark:text-zinc-500">
+                  One-time payment. No auto-renew. Pay again anytime to extend.
                 </p>
               )}
             </div>
-          )}
-          {plan === "pro" && sub?.status === "active" && !admin && (
-            <button
-              onClick={handleCancel}
-              disabled={cancelling}
-              className="mt-4 rounded-md border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-            >
-              {cancelling ? "Cancelling..." : "Cancel subscription"}
-            </button>
           )}
         </div>
 
@@ -426,6 +444,16 @@ export default function BillingPage() {
           {plans.map((p) => {
             const isCurrent =
               p.name.toLowerCase() === plan.toLowerCase();
+            const payable = isPayable(p);
+            const isPro = p.name.toLowerCase() === "pro";
+            const canPay =
+              payable &&
+              !admin &&
+              (plan === "free" || (plan === "pro" && sub?.status === "active"));
+            const payLabel =
+              plan === "pro" && sub?.status === "active" && isPro
+                ? `Extend Pro — ${p.currency} ${Number(p.amount).toFixed(2)} · ${p.durationDays} days`
+                : `Pay ${p.currency} ${Number(p.amount ?? 0).toFixed(2)} · ${p.durationDays} days`;
             return (
               <div
                 key={p.id}
@@ -444,24 +472,22 @@ export default function BillingPage() {
                     ))}
                   </ul>
                 )}
-                {isCurrent ? (
+                {isCurrent && plan === "free" ? (
                   <div className="mt-4 rounded bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">
                     Current plan
                   </div>
-                ) : sub?.status === "pending" ? (
-                  <div className="mt-4 rounded bg-yellow-100 px-3 py-2 text-center text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
-                    Awaiting PayPal approval
-                  </div>
-                ) : p.name.toLowerCase() === "pro" && plan === "free" ? (
+                ) : canPay && isPro ? (
                   <button
-                    onClick={() => handleUpgrade(p.id)}
-                    disabled={upgrading}
+                    onClick={() => handlePay(p.id)}
+                    disabled={upgrading || capturing}
                     className="mt-4 w-full rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black"
                   >
-                    {upgrading
-                      ? "Redirecting to PayPal..."
-                      : "Upgrade to Pro"}
+                    {upgrading ? "Redirecting to PayPal..." : payLabel}
                   </button>
+                ) : isCurrent ? (
+                  <div className="mt-4 rounded bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">
+                    Current plan
+                  </div>
                 ) : null}
               </div>
             );

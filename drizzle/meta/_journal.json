@@ -43,6 +43,13 @@
       "when": 1789345628628,
       "tag": "0005_messy_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789348000000,
+      "tag": "0006_one_time_paypal",
+      "breakpoints": true
     }
   ]
 }

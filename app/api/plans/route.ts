@@ -28,6 +28,9 @@ export async function GET(request: Request) {
       id: plans.id,
       name: plans.name,
       price: plans.price,
+      amount: plans.amount,
+      currency: plans.currency,
+      durationDays: plans.durationDays,
       features: plans.features,
       isActive: plans.isActive,
       sortOrder: plans.sortOrder,
@@ -60,9 +63,24 @@ export async function POST(request: Request) {
     .values({
       name: body.name,
       price: body.price,
+      amount:
+        body.amount == null
+          ? null
+          : typeof body.amount === "number"
+            ? String(body.amount.toFixed(2))
+            : String(body.amount),
+      currency:
+        typeof body.currency === "string" && body.currency.length === 3
+          ? body.currency.toUpperCase()
+          : "USD",
+      durationDays:
+        typeof body.durationDays === "number" &&
+        Number.isInteger(body.durationDays) &&
+        body.durationDays >= 1 &&
+        body.durationDays <= 3650
+          ? body.durationDays
+          : 30,
       features: body.features ?? [],
-      paypalPlanId:
-        typeof body.paypalPlanId === "string" ? body.paypalPlanId : null,
       isActive: body.isActive ?? true,
       sortOrder: body.sortOrder ?? 0,
     })

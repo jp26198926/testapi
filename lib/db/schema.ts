@@ -8,6 +8,7 @@ import {
   index,
   uniqueIndex,
   boolean,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -222,8 +223,10 @@ export const plans = pgTable("plans", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   price: text("price").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }),
+  currency: text("currency").notNull().default("USD"),
+  durationDays: integer("duration_days").notNull().default(30),
   features: jsonb("features").notNull().default([]),
-  paypalPlanId: text("paypal_plan_id"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

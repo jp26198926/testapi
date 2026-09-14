@@ -30,40 +30,53 @@ async function getAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-export async function createSubscription(planId?: string): Promise<{
-  id: string;
-  approvalUrl: string;
-}> {
-  const resolvedPlanId = planId || process.env.PAYPAL_PLAN_ID;
-  if (!resolvedPlanId) {
-    throw new Error(
-      "No PayPal plan configured. Set plans.paypalPlanId or PAYPAL_PLAN_ID."
-    );
-  }
+export function toPayPalAmount(v: string | number): string {
+  return Number(v).toFixed(2);
+}
 
+export type CreatedOrder = { id: string; approvalUrl: string };
+
+export async function createOrder(params: {
+  amount: string;
+  currency: string;
+  customId: string;
+  description: string;
+  returnUrl: string;
+  cancelUrl: string;
+}): Promise<CreatedOrder> {
   const token = await getAccessToken();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  const res = await fetch(`${PAYPAL_API}/v1/billing/subscriptions`, {
+  const res = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      plan_id: resolvedPlanId,
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: params.currency,
+            value: params.amount,
+          },
+          description: params.description,
+          custom_id: params.customId,
+        },
+      ],
       application_context: {
         brand_name: "TESTAPI",
-        user_action: "SUBSCRIBE_NOW",
-        return_url: `${appUrl}/billing?success=true`,
-        cancel_url: `${appUrl}/billing?cancelled=true`,
+        user_action: "PAY_NOW",
+        return_url: params.returnUrl,
+        cancel_url: params.cancelUrl,
       },
     }),
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`PayPal subscription creation failed: ${res.status} ${err}`);
+    throw new Error(
+      `PayPal createOrder failed: ${res.status} ${await res.text()}`
+    );
   }
 
   const data = await res.json();
@@ -71,61 +84,73 @@ export async function createSubscription(planId?: string): Promise<{
     (l: { rel: string }) => l.rel === "approve"
   )?.href;
 
+  if (!data.id || !approvalUrl) {
+    throw new Error("PayPal createOrder: missing id or approval URL");
+  }
+
   return { id: data.id, approvalUrl };
 }
 
-export type PayPalSubscription = {
+export type CapturedOrder = {
   id: string;
   status: string;
-  plan_id?: string;
-  start_time?: string;
-  billing_info?: {
-    next_billing_time?: string;
-    last_payment?: { amount?: { value: string; currency_code: string } };
-  };
-  subscriber?: { email_address?: string };
+  custom_id?: string;
+  purchase_units?: Array<{
+    custom_id?: string;
+    payments?: {
+      captures?: Array<{
+        id: string;
+        status: string;
+        amount: { value: string; currency_code: string };
+      }>;
+    };
+  }>;
 };
 
-export async function getSubscription(
-  subscriptionId: string
-): Promise<PayPalSubscription> {
+export async function getOrder(orderId: string): Promise<CapturedOrder> {
   const token = await getAccessToken();
-  const res = await fetch(
-    `${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const res = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) {
     throw new Error(
-      `PayPal getSubscription failed: ${res.status} ${await res.text()}`
+      `PayPal getOrder failed: ${res.status} ${await res.text()}`
     );
   }
   return res.json();
 }
 
-export async function cancelSubscription(
-  subscriptionId: string,
-  reason = "Cancelled by user"
-): Promise<void> {
+export async function captureOrder(orderId: string): Promise<CapturedOrder> {
   const token = await getAccessToken();
+
   const res = await fetch(
-    `${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}/cancel`,
+    `${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`,
     {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ reason }),
     }
   );
-  // 204 success; 422 if already cancelled/inactive — treat as idempotent
-  if (!res.ok && res.status !== 422) {
-    throw new Error(
-      `PayPal cancel failed: ${res.status} ${await res.text()}`
-    );
+
+  const text = await res.text();
+  let data: CapturedOrder & { details?: Array<{ issue?: string }> };
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`PayPal captureOrder parse failed: ${res.status}`);
   }
+
+  if (!res.ok) {
+    const issue = data.details?.[0]?.issue;
+    if (issue === "ORDER_ALREADY_CAPTURED") {
+      throw new Error("ORDER_ALREADY_CAPTURED");
+    }
+    throw new Error(`PayPal captureOrder failed: ${res.status} ${text}`);
+  }
+
+  return data;
 }
 
 export async function verifyWebhookSignature(params: {

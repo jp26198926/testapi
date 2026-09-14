@@ -27,8 +27,21 @@ export async function PATCH(
   if (Array.isArray(body.features)) updates.features = body.features;
   if (typeof body.isActive === "boolean") updates.isActive = body.isActive;
   if (typeof body.sortOrder === "number") updates.sortOrder = body.sortOrder;
-  if (typeof body.paypalPlanId === "string" || body.paypalPlanId === null) {
-    updates.paypalPlanId = body.paypalPlanId;
+  if (body.amount === null) {
+    updates.amount = null;
+  } else if (typeof body.amount === "number" && body.amount >= 0) {
+    updates.amount = body.amount.toFixed(2);
+  }
+  if (typeof body.currency === "string" && body.currency.length === 3) {
+    updates.currency = body.currency.toUpperCase();
+  }
+  if (
+    typeof body.durationDays === "number" &&
+    Number.isInteger(body.durationDays) &&
+    body.durationDays >= 1 &&
+    body.durationDays <= 3650
+  ) {
+    updates.durationDays = body.durationDays;
   }
 
   const [updated] = await db

@@ -22,7 +22,7 @@ export async function getUserPlan(
   if (sub.length > 0) {
     const s = sub[0];
     if (
-      s.plan === "pro" &&
+      s.plan !== "free" &&
       s.currentPeriodEnd &&
       new Date(s.currentPeriodEnd) > new Date()
     ) {
