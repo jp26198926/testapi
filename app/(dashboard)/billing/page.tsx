@@ -137,7 +137,10 @@ export default function BillingPage() {
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [admin, setAdmin] = useState(false);
+  const [banner, setBanner] = useState<null | "success" | "cancelled">(null);
+  const [upgradeError, setUpgradeError] = useState("");
 
   // Plans state
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -158,6 +161,22 @@ export default function BillingPage() {
   const [paymentTotalPages, setPaymentTotalPages] = useState(0);
   const [paymentLoading, setPaymentLoading] = useState(true);
 
+  const refetchSubscription = useCallback(() => {
+    fetch("/api/subscriptions")
+      .then((r) => r.json())
+      .then((d) => setData(d.data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") setBanner("success");
+    else if (params.get("cancelled") === "true") setBanner("cancelled");
+    if (params.has("success") || params.has("cancelled")) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/subscriptions")
       .then((r) => r.json())
@@ -177,6 +196,15 @@ export default function BillingPage() {
       .then((d) => setPlans(d.data || []))
       .catch(() => {});
   }, []);
+
+  // Poll briefly after PayPal return — webhook may lag the redirect
+  useEffect(() => {
+    if (banner !== "success") return;
+    const timers = [2000, 5000, 10000].map((ms) =>
+      setTimeout(refetchSubscription, ms)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [banner, refetchSubscription]);
 
   const fetchBillingRecords = useCallback(() => {
     setBillingLoading(true);
@@ -216,18 +244,54 @@ export default function BillingPage() {
     fetchPaymentRecords();
   }, [fetchPaymentRecords]);
 
-  async function handleUpgrade() {
+  async function handleUpgrade(planLocalId?: string) {
     setUpgrading(true);
+    setUpgradeError("");
     try {
-      const res = await fetch("/api/subscriptions", { method: "POST" });
+      const res = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(planLocalId ? { planId: planLocalId } : {}),
+      });
       const result = await res.json();
+      if (!res.ok || result.error?.message) {
+        setUpgradeError(
+          result.error?.message || "Upgrade failed. Please try again."
+        );
+        return;
+      }
       if (result.data?.approvalUrl) {
         window.location.href = result.data.approvalUrl;
+        return;
       }
+      setUpgradeError(
+        "PayPal did not return an approval URL. Check server logs and PayPal plan configuration."
+      );
     } catch {
-      // noop
+      setUpgradeError("Network error while starting upgrade.");
+    } finally {
+      setUpgrading(false);
     }
-    setUpgrading(false);
+  }
+
+  async function handleCancel() {
+    if (
+      !confirm(
+        "Cancel your Pro subscription? You keep Pro until the period ends."
+      )
+    ) {
+      return;
+    }
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/subscriptions/cancel", { method: "POST" });
+      if (res.ok) {
+        refetchSubscription();
+        fetchBillingRecords();
+      }
+    } finally {
+      setCancelling(false);
+    }
   }
 
   async function handleExportBilling(format: "csv" | "excel") {
@@ -261,6 +325,44 @@ export default function BillingPage() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Billing</h1>
 
+      {banner === "success" && (
+        <div className="flex items-start justify-between rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+          <span>
+            {sub?.status === "pending"
+              ? "Payment received. Activating your Pro subscription…"
+              : "Payment successful. Your Pro subscription is active."}
+          </span>
+          <button
+            onClick={() => setBanner(null)}
+            className="ml-4 shrink-0 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {banner === "cancelled" && (
+        <div className="flex items-start justify-between rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+          <span>Checkout was cancelled. You have not been charged.</span>
+          <button
+            onClick={() => setBanner(null)}
+            className="ml-4 shrink-0 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {upgradeError && (
+        <div className="flex items-start justify-between rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <span>{upgradeError}</span>
+          <button
+            onClick={() => setUpgradeError("")}
+            className="ml-4 shrink-0 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Current Plan */}
         <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
@@ -269,6 +371,11 @@ export default function BillingPage() {
           {sub && (
             <div className="mt-4 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
               <p>Status: {sub.status}</p>
+              {sub.status === "pending" && (
+                <p className="text-yellow-600 dark:text-yellow-400">
+                  Awaiting PayPal approval
+                </p>
+              )}
               {sub.currentPeriodEnd && (
                 <p>
                   Renews:{" "}
@@ -276,6 +383,15 @@ export default function BillingPage() {
                 </p>
               )}
             </div>
+          )}
+          {plan === "pro" && sub?.status === "active" && !admin && (
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="mt-4 rounded-md border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+            >
+              {cancelling ? "Cancelling..." : "Cancel subscription"}
+            </button>
           )}
         </div>
 
@@ -332,9 +448,13 @@ export default function BillingPage() {
                   <div className="mt-4 rounded bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">
                     Current plan
                   </div>
+                ) : sub?.status === "pending" ? (
+                  <div className="mt-4 rounded bg-yellow-100 px-3 py-2 text-center text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+                    Awaiting PayPal approval
+                  </div>
                 ) : p.name.toLowerCase() === "pro" && plan === "free" ? (
                   <button
-                    onClick={handleUpgrade}
+                    onClick={() => handleUpgrade(p.id)}
                     disabled={upgrading}
                     className="mt-4 w-full rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black"
                   >

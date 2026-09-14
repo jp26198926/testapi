@@ -32,6 +32,14 @@ export async function getUserPlan(
   return "free";
 }
 
+export async function getRateLimitTier(
+  userId: string,
+  user?: User
+): Promise<"admin" | "pro" | "free"> {
+  if (user && isAdmin(user)) return "admin";
+  return (await getUserPlan(userId)) === "pro" ? "pro" : "free";
+}
+
 export async function getCollectionCount(userId: string): Promise<number> {
   const result = await db
     .select({ count: count() })

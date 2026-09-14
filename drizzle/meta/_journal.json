@@ -36,6 +36,13 @@
       "when": 1789174280123,
       "tag": "0004_green_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789345628628,
+      "tag": "0005_messy_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }

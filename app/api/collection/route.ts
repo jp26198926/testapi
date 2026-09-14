@@ -11,10 +11,9 @@ import {
   createCollectionSchema,
   paginationSchema,
 } from "@/lib/api/validation";
-import { canCreateCollection } from "@/lib/api/plans";
+import { canCreateCollection, getRateLimitTier } from "@/lib/api/plans";
 import { toSlug } from "@/lib/utils";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import { isAdmin } from "@/lib/api/admin";
 
 // GET /api/collection — list user's collections
 export async function GET(request: Request) {
@@ -66,7 +65,8 @@ export async function POST(request: Request) {
   }
 
   // Rate limit
-  const rl = checkRateLimit(user.id, isAdmin(user) ? "admin" : "free");
+  const tier = await getRateLimitTier(user.id, user);
+  const rl = checkRateLimit(user.id, tier);
   if (!rl.allowed) return ERRORS.RATE_LIMITED();
 
   const body = await request.json();

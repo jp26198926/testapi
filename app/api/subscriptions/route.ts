@@ -2,8 +2,8 @@ import { requireAuth } from "@/lib/api/auth";
 import { ERRORS, apiSuccess } from "@/lib/api/response";
 import { createSubscription } from "@/lib/paypal";
 import { db } from "@/lib/db";
-import { subscriptions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { subscriptions, plans } from "@/lib/db/schema";
+import { eq, and, desc, asc } from "drizzle-orm";
 import { getUserPlan } from "@/lib/api/plans";
 
 // GET /api/subscriptions — get current user's subscription
@@ -21,6 +21,7 @@ export async function GET() {
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.userId, user.id))
+    .orderBy(desc(subscriptions.updatedAt))
     .limit(1);
 
   return apiSuccess({
@@ -30,7 +31,7 @@ export async function GET() {
 }
 
 // POST /api/subscriptions — create a PayPal subscription
-export async function POST() {
+export async function POST(request: Request) {
   let user;
   try {
     ({ user } = await requireAuth());
@@ -38,10 +39,37 @@ export async function POST() {
     return ERRORS.UNAUTHORIZED();
   }
 
-  try {
-    const { id, approvalUrl } = await createSubscription();
+  const current = await getUserPlan(user.id);
+  if (current === "pro") {
+    return ERRORS.CONFLICT("You already have an active Pro subscription.");
+  }
 
-    // Store pending subscription
+  const body = await request.json().catch(() => ({}));
+  const planId = typeof body?.planId === "string" ? body.planId : undefined;
+
+  let paypalPlanId: string | undefined;
+  if (planId) {
+    const [row] = await db
+      .select()
+      .from(plans)
+      .where(and(eq(plans.id, planId), eq(plans.isActive, true)))
+      .limit(1);
+    paypalPlanId = row?.paypalPlanId ?? undefined;
+  } else {
+    const activePlans = await db
+      .select()
+      .from(plans)
+      .where(eq(plans.isActive, true))
+      .orderBy(asc(plans.sortOrder));
+    const pro =
+      activePlans.find((p) => p.name.toLowerCase() === "pro") ??
+      activePlans[0];
+    paypalPlanId = pro?.paypalPlanId ?? undefined;
+  }
+
+  try {
+    const { id, approvalUrl } = await createSubscription(paypalPlanId);
+
     const existing = await db
       .select()
       .from(subscriptions)

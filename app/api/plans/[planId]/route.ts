@@ -27,6 +27,9 @@ export async function PATCH(
   if (Array.isArray(body.features)) updates.features = body.features;
   if (typeof body.isActive === "boolean") updates.isActive = body.isActive;
   if (typeof body.sortOrder === "number") updates.sortOrder = body.sortOrder;
+  if (typeof body.paypalPlanId === "string" || body.paypalPlanId === null) {
+    updates.paypalPlanId = body.paypalPlanId;
+  }
 
   const [updated] = await db
     .update(plans)

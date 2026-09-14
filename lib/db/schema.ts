@@ -182,6 +182,27 @@ export const payments = pgTable(
   (table) => [
     index("payments_user_id_idx").on(table.userId),
     index("payments_subscription_id_idx").on(table.subscriptionId),
+    uniqueIndex("payments_provider_payment_id_idx").on(table.providerPaymentId),
+  ]
+);
+
+// ── Webhook Events (idempotency) ─────────────────────────────────────────────
+
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: text("provider").notNull().default("paypal"),
+    providerEventId: text("provider_event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    processedAt: timestamp("processed_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("webhook_events_provider_event_id_idx").on(
+      table.provider,
+      table.providerEventId
+    ),
   ]
 );
 
@@ -202,6 +223,7 @@ export const plans = pgTable("plans", {
   name: text("name").notNull(),
   price: text("price").notNull(),
   features: jsonb("features").notNull().default([]),
+  paypalPlanId: text("paypal_plan_id"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

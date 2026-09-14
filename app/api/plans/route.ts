@@ -24,7 +24,14 @@ export async function GET(request: Request) {
   }
 
   const activePlans = await db
-    .select()
+    .select({
+      id: plans.id,
+      name: plans.name,
+      price: plans.price,
+      features: plans.features,
+      isActive: plans.isActive,
+      sortOrder: plans.sortOrder,
+    })
     .from(plans)
     .where(eq(plans.isActive, true))
     .orderBy(asc(plans.sortOrder));
@@ -54,6 +61,8 @@ export async function POST(request: Request) {
       name: body.name,
       price: body.price,
       features: body.features ?? [],
+      paypalPlanId:
+        typeof body.paypalPlanId === "string" ? body.paypalPlanId : null,
       isActive: body.isActive ?? true,
       sortOrder: body.sortOrder ?? 0,
     })

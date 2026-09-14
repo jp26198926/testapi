@@ -11,9 +11,8 @@ import {
   createRecordSchema,
   paginationSchema,
 } from "@/lib/api/validation";
-import { canCreateRecord } from "@/lib/api/plans";
+import { canCreateRecord, getRateLimitTier } from "@/lib/api/plans";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import { isAdmin } from "@/lib/api/admin";
 
 // GET /api/collection/[collectionId]/[slug] — list records
 export async function GET(
@@ -93,7 +92,8 @@ export async function POST(
   const { collectionId, slug } = await params;
 
   // Rate limit
-  const rl = checkRateLimit(user.id, isAdmin(user) ? "admin" : "free");
+  const tier = await getRateLimitTier(user.id, user);
+  const rl = checkRateLimit(user.id, tier);
   if (!rl.allowed) return ERRORS.RATE_LIMITED();
 
   // Verify ownership and slug
